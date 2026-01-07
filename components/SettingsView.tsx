@@ -90,7 +90,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, o
       </div>
 
       <div className="text-center pt-4 opacity-50">
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Mi Extra App v1.1</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Mi Extra App v1.2</p>
         <p className="text-xs">Hecho con ❤️ para organizarse mejor</p>
       </div>
     </div>
