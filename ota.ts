@@ -61,6 +61,10 @@ export const OTA = {
     try {
       // Set the update as ready to be used on next app launch
       await CapacitorUpdater.set({ id: versionInfo.version });
+      
+      // Force app exit to "restart" and apply the new bundle
+      await App.exitApp();
+      
     } catch (error) {
       // Ignore JS bridge errors during reload/restart
       console.log(

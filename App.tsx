@@ -35,7 +35,7 @@ const App: React.FC = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   // OTA State
-  const [updateStatus, setUpdateStatus] = useState<'idle' | 'available' | 'downloading' | 'installing' | 'ready'>('idle');
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'available' | 'downloading' | 'installing' | 'ready' | 'restarting'>('idle');
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [newVersion, setNewVersion] = useState<string | null>(null);
   const [versionInfo, setVersionInfo] = useState<any>(null); // To store the full version object from OTA check
@@ -109,11 +109,11 @@ const App: React.FC = () => {
   };
 
   const handleInstallUpdate = async () => {
-    setUpdateStatus('installing');
-    // Aesthetic delay for "Install" message reading
+    setUpdateStatus('restarting');
+    // Aesthetic delay for "Restarting" message reading before app exit
     setTimeout(async () => {
       await OTA.installUpdate(versionInfo);
-    }, 1000);
+    }, 1500);
   };
 
   useEffect(() => {
@@ -341,12 +341,14 @@ const App: React.FC = () => {
                  {updateStatus === 'available' ? 'Nueva Versión' :
                   updateStatus === 'downloading' ? 'Descargando...' :
                   updateStatus === 'ready' ? 'Listo para Instalar' : 
-                  updateStatus === 'installing' ? 'Actualizando...' : ''}
+                  updateStatus === 'installing' ? 'Actualizando...' : 
+                  updateStatus === 'restarting' ? 'Reiniciando...' : ''}
                </p>
                <p className="text-sm font-semibold">
                  {updateStatus === 'available' ? `v${newVersion} disponible` : 
                   updateStatus === 'downloading' ? `${downloadProgress}% completado` :
-                  updateStatus === 'ready' ? 'Reiniciar app' :
+                  updateStatus === 'ready' ? 'Toque para instalar' :
+                  updateStatus === 'restarting' ? 'Cerrando aplicación...' :
                   'Preparando...'}
                </p>
              </div>
