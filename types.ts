@@ -24,3 +24,10 @@ export enum RateType {
 }
 
 export type ViewMode = 'add' | 'history' | 'stats' | 'settings';
+
+export interface AppSettings {
+  homeViewMode: 'currentMonth' | 'custom';
+  customStartDate: string; // YYYY-MM-DD
+  customEndDate: string;   // YYYY-MM-DD
+  billingCycleStartDay: number; // 1-31
+}

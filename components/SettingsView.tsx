@@ -1,16 +1,18 @@
 import React from 'react';
-import { User, Download, Trash2, Shield, FileText, LogOut, Github } from 'lucide-react';
-import { WorkEntry } from '../types';
+import { User, Download, Trash2, Shield, FileText, LogOut, Github, CalendarDays } from 'lucide-react';
+import { WorkEntry, AppSettings } from '../types';
 import { downloadCSV } from '../utils';
 
 interface SettingsViewProps {
   userName: string;
   entries: WorkEntry[];
+  settings: AppSettings;
+  onUpdateSettings: (newSettings: AppSettings) => void;
   onLogout: () => void;
   onClearData: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, onLogout, onClearData }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, settings, onUpdateSettings, onLogout, onClearData }) => {
   return (
     <div className="space-y-6 animate-fade-in pb-24">
       <h2 className="text-xl font-bold text-gray-900 px-1">Configuración</h2>
@@ -31,8 +33,74 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, o
           className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
           title="Cerrar Sesión"
         >
-          <LogOut size={20} />
         </button>
+      </div>
+
+      {/* Income Settings */}
+      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 space-y-4">
+        <div className='flex items-center gap-2'>
+           <div className="bg-emerald-50 text-emerald-500 p-2 rounded-lg">
+             <CalendarDays size={18} />
+           </div>
+           <h3 className="font-bold text-gray-900">Rango de Ingresos (Inicio)</h3>
+        </div>
+        
+        <div className='flex p-1 bg-gray-50 rounded-xl'>
+            <button 
+               onClick={() => onUpdateSettings({ ...settings, homeViewMode: 'currentMonth' })}
+               className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${settings.homeViewMode === 'currentMonth' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+                Mes Actual
+            </button>
+            <button 
+               onClick={() => onUpdateSettings({ ...settings, homeViewMode: 'custom' })}
+               className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${settings.homeViewMode === 'custom' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+                Personalizado
+            </button>
+        </div>
+
+        {settings.homeViewMode === 'currentMonth' && (
+             <div className='animate-fade-in'>
+                <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Día de inicio del ciclo mensual</label>
+                <div className='flex items-center gap-3'>
+                    <input 
+                        type='number' 
+                        min="1"
+                        max="31"
+                        className='w-20 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 transition-colors'
+                        value={settings.billingCycleStartDay || 1}
+                        onChange={(e) => onUpdateSettings({ ...settings, billingCycleStartDay: parseInt(e.target.value) || 1 })}
+                    />
+                    <p className='text-[10px] text-gray-400 font-medium'>
+                        Ejemplo: Si pones 20, el ciclo será del 20 al 19 del mes siguiente.
+                    </p>
+                </div>
+             </div>
+        )}
+
+        {settings.homeViewMode === 'custom' && (
+            <div className='grid grid-cols-2 gap-3 animate-fade-in'>
+                <div>
+                    <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Desde</label>
+                    <input 
+                        type='date' 
+                        className='w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 transition-colors uppercase'
+                        value={settings.customStartDate || ''}
+                        onChange={(e) => onUpdateSettings({ ...settings, customStartDate: e.target.value })}
+                    />
+                </div>
+                <div>
+                     <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Hasta</label>
+                    <input 
+                        type='date' 
+                        className='w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 transition-colors uppercase'
+                        value={settings.customEndDate || ''}
+                        onChange={(e) => onUpdateSettings({ ...settings, customEndDate: e.target.value })}
+                    />
+                </div>
+            </div>
+        )}
       </div>
 
       {/* Data Management */}

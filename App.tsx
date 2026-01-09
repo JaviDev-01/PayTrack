@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { generateId, formatCurrency, getStartOfWeek, addDays, formatDateRange, formatDuration, getMonthName } from './utils';
-import { WorkEntry, ViewMode } from './types';
+import { generateId, formatCurrency, getStartOfWeek, addDays, formatDateRange, formatDuration, getMonthName, getBillingCycleRange } from './utils';
+import { WorkEntry, ViewMode, AppSettings } from './types';
 import { AddHoursForm } from './components/AddHoursForm';
 import { HistoryList } from './components/HistoryList';
 import { StatsChart } from './components/StatsChart';
@@ -40,12 +40,25 @@ const App: React.FC = () => {
   const [newVersion, setNewVersion] = useState<string | null>(null);
   const [versionInfo, setVersionInfo] = useState<any>(null); // To store the full version object from OTA check
 
+
+
+  // Settings State
+  const defaultSettings: AppSettings = {
+    homeViewMode: 'currentMonth',
+    customStartDate: '', 
+    customEndDate: '',
+    billingCycleStartDay: 1
+  };
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+
   const storageKey = useMemo(() => `mi-extra-app-data-${userName || 'default'}`, [userName]);
+  const settingsKey = useMemo(() => `mi-extra-app-settings-${userName || 'default'}`, [userName]);
 
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       if (userName) {
+        // Load Data
         const saved = localStorage.getItem(storageKey);
         if (saved) {
           try {
@@ -63,11 +76,23 @@ const App: React.FC = () => {
           setEntries([]);
           setShowTutorial(true);
         }
+
+        // Load Settings
+        const savedSettings = localStorage.getItem(settingsKey);
+        if (savedSettings) {
+          try {
+            setSettings(JSON.parse(savedSettings));
+          } catch (e) {
+            setSettings(defaultSettings);
+          }
+        } else {
+            setSettings(defaultSettings);
+        }
       }
       setLoading(false);
     }, 400); 
     return () => clearTimeout(timer);
-  }, [userName, storageKey]);
+  }, [userName, storageKey, settingsKey]);
 
   useEffect(() => {
     // Check for updates on mount
@@ -119,8 +144,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (userName && !loading) {
       localStorage.setItem(storageKey, JSON.stringify(entries));
+      localStorage.setItem(settingsKey, JSON.stringify(settings));
     }
-  }, [entries, userName, storageKey, loading]);
+  }, [entries, settings, userName, storageKey, settingsKey, loading]);
 
   const handleLogin = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -180,22 +206,34 @@ const App: React.FC = () => {
 
   // --- STATS LOGIC ---
   
-  // 1. Current Month Stats (For Home Screen)
-  const currentMonthStats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  // 1. Home Stats (Configurable)
+  const homeStats = useMemo(() => {
+    // Custom Range Mode
+    if (settings.homeViewMode === 'custom' && settings.customStartDate && settings.customEndDate) {
+        const start = settings.customStartDate;
+        const end = settings.customEndDate;
+        const rangeEntries = entries.filter(e => e.date >= start && e.date <= end);
+        return rangeEntries.reduce((acc, curr) => ({
+             totalEarned: acc.totalEarned + curr.totalEarned,
+             totalHours: acc.totalHours + curr.hours,
+        }), { totalEarned: 0, totalHours: 0 });
+    }
 
-    const monthEntries = entries.filter(e => {
-      const d = new Date(e.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    });
+    // Mode: Current Period (Monthly or Billing Cycle)
+    const { start, end } = getBillingCycleRange(settings.billingCycleStartDay || 1);
+    
+    // We compare strings for consistency with other parts of the app, 
+    // or just use timestamps/dates. entries date is YYYY-MM-DD.
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
 
-    return monthEntries.reduce((acc, curr) => ({
+    const periodEntries = entries.filter(e => e.date >= startStr && e.date <= endStr);
+
+    return periodEntries.reduce((acc, curr) => ({
       totalEarned: acc.totalEarned + curr.totalEarned,
       totalHours: acc.totalHours + curr.hours,
     }), { totalEarned: 0, totalHours: 0 });
-  }, [entries]);
+  }, [entries, settings]);
 
   // 2. Weekly & Global Stats (For Stats Screen)
   const currentWeekStart = useMemo(() => {
@@ -430,16 +468,20 @@ const App: React.FC = () => {
                      <div className="bg-white/10 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
                        <p className="text-xs font-bold uppercase tracking-wider text-white/80 flex items-center gap-2">
                          <Calendar size={12} />
-                         {getMonthName(new Date())}
+                         {settings.homeViewMode === 'custom' 
+                            ? (settings.customStartDate && settings.customEndDate 
+                                ? `${settings.customStartDate.substring(5)} - ${settings.customEndDate.substring(5)}`
+                                : 'Rango Personalizado')
+                            : formatDateRange(getBillingCycleRange(settings.billingCycleStartDay || 1).start, getBillingCycleRange(settings.billingCycleStartDay || 1).end)}
                        </p>
                      </div>
                    </div>
                    
                    <div className="flex flex-col gap-1">
-                      <span className="text-5xl font-black tracking-tight">{formatCurrency(currentMonthStats.totalEarned).split(',')[0]}<span className="text-2xl text-white/40">,{formatCurrency(currentMonthStats.totalEarned).split(',')[1]}</span></span>
+                      <span className="text-5xl font-black tracking-tight">{formatCurrency(homeStats.totalEarned).split(',')[0]}<span className="text-2xl text-white/40">,{formatCurrency(homeStats.totalEarned).split(',')[1]}</span></span>
                       <div className="flex items-center gap-2 mt-2">
                         <Clock size={14} className="text-white/40" />
-                        <p className="text-sm font-medium text-white/60"><span className="text-white font-bold">{formatDuration(currentMonthStats.totalHours)}</span> este mes</p>
+                        <p className="text-sm font-medium text-white/60"><span className="text-white font-bold">{formatDuration(homeStats.totalHours)}</span> {settings.homeViewMode === 'custom' ? 'en periodo' : 'en este ciclo'}</p>
                       </div>
                    </div>
                 </div>
@@ -542,6 +584,8 @@ const App: React.FC = () => {
           <SettingsView 
             userName={userName} 
             entries={entries} 
+            settings={settings}
+            onUpdateSettings={setSettings}
             onLogout={handleLogout} 
             onClearData={handleClearData}
           />

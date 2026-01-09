@@ -98,3 +98,28 @@ export const downloadCSV = (entries: WorkEntry[], userName: string) => {
   link.click();
   document.body.removeChild(link);
 };
+
+export const getBillingCycleRange = (startDay: number): { start: Date, end: Date } => {
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  let start: Date;
+  let end: Date;
+
+  if (currentDay < startDay) {
+    // Current period started in the previous month
+    start = new Date(currentYear, currentMonth - 1, startDay);
+    end = new Date(currentYear, currentMonth, startDay - 1);
+  } else {
+    // Current period started in the current month
+    start = new Date(currentYear, currentMonth, startDay);
+    end = new Date(currentYear, currentMonth + 1, startDay - 1);
+  }
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
+};
