@@ -1,7 +1,7 @@
 import React from 'react';
-import { User, Download, Trash2, Shield, FileText, LogOut, Github, CalendarDays } from 'lucide-react';
+import { User, Download, Trash2, Shield, FileText, LogOut, Github, CalendarDays, Coins, FileSpreadsheet } from 'lucide-react';
 import { WorkEntry, AppSettings } from '../types';
-import { downloadCSV } from '../utils';
+import { exportToExcel } from '../utils';
 
 interface SettingsViewProps {
   userName: string;
@@ -10,9 +10,10 @@ interface SettingsViewProps {
   onUpdateSettings: (newSettings: AppSettings) => void;
   onLogout: () => void;
   onClearData: () => void;
+  onExportExcel: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, settings, onUpdateSettings, onLogout, onClearData }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, settings, onUpdateSettings, onLogout, onClearData, onExportExcel }) => {
   return (
     <div className="space-y-6 animate-fade-in pb-24">
       <h2 className="text-xl font-bold text-gray-900 px-1">Configuración</h2>
@@ -103,21 +104,75 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
         )}
       </div>
 
+      {/* Rate Settings */}
+      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 space-y-4">
+        <div className='flex items-center gap-2'>
+           <div className="bg-amber-50 text-amber-500 p-2 rounded-lg">
+             <Coins size={18} />
+           </div>
+           <h3 className="font-bold text-gray-900">Tarifas Personalizadas (€/h)</h3>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <div>
+                   <p className="text-xs font-bold text-gray-900">Lunes a Viernes</p>
+                   <p className="text-[10px] text-gray-400 font-medium tracking-wide">Tarifa Estándar</p>
+                </div>
+                <input 
+                    type="number" 
+                    step="0.01"
+                    className="w-24 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-black text-indigo-600 text-right outline-none focus:border-indigo-500"
+                    value={settings.rateWeekday}
+                    onChange={(e) => onUpdateSettings({ ...settings, rateWeekday: parseFloat(e.target.value) || 0 })}
+                />
+            </div>
+
+            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <div>
+                   <p className="text-xs font-bold text-gray-900">Sábados</p>
+                   <p className="text-[10px] text-gray-400 font-medium tracking-wide">Tarifa Extra Sábado</p>
+                </div>
+                <input 
+                    type="number" 
+                    step="0.01"
+                    className="w-24 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-black text-pink-600 text-right outline-none focus:border-pink-500"
+                    value={settings.rateSaturday}
+                    onChange={(e) => onUpdateSettings({ ...settings, rateSaturday: parseFloat(e.target.value) || 0 })}
+                />
+            </div>
+
+            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <div>
+                   <p className="text-xs font-bold text-gray-900">Festivos</p>
+                   <p className="text-[10px] text-gray-400 font-medium tracking-wide">Tarifa Especial Festivo</p>
+                </div>
+                <input 
+                    type="number" 
+                    step="0.01"
+                    className="w-24 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-black text-amber-600 text-right outline-none focus:border-amber-500"
+                    value={settings.rateHoliday}
+                    onChange={(e) => onUpdateSettings({ ...settings, rateHoliday: parseFloat(e.target.value) || 0 })}
+                />
+            </div>
+        </div>
+      </div>
+
       {/* Data Management */}
       <div className="space-y-3">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Datos</p>
         
         <button 
-          onClick={() => downloadCSV(entries, userName)}
-          className="w-full bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-indigo-200 group transition-all"
+          onClick={onExportExcel}
+          className="w-full bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-emerald-200 group transition-all"
         >
           <div className="flex items-center gap-4">
-             <div className="bg-indigo-50 text-indigo-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
-               <Download size={20} />
+             <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
+               <FileSpreadsheet size={20} />
              </div>
              <div className="text-left">
-               <p className="font-bold text-gray-900">Exportar CSV</p>
-               <p className="text-xs text-gray-400">Descarga tu historial completo</p>
+               <p className="font-bold text-gray-900">Exportar a Excel</p>
+               <p className="text-xs text-gray-400">Descarga tu historial ordenado</p>
              </div>
           </div>
         </button>
@@ -159,7 +214,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
 
       <div className="text-center pt-4 opacity-50">
         <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Mi Extra App v1.2</p>
-        <p className="text-xs">Hecho con ❤️ para organizarse mejor</p>
+        <p className="text-xs">By JaviDev - 2026 - All rights reserved</p>
       </div>
     </div>
   );

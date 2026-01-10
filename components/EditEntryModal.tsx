@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { WorkEntry } from '../types';
+import { WorkEntry, AppSettings } from '../types';
 import { getRateForDate, isWeekendDay, formatCurrency } from '../utils';
-import { X, Save, CalendarDays, Clock, PenLine } from 'lucide-react';
+import { X, Save, CalendarDays, Clock, PenLine, Sparkles } from 'lucide-react';
 
 interface EditEntryModalProps {
   entry: WorkEntry;
+  settings: AppSettings;
   onClose: () => void;
   onSave: (updatedEntry: WorkEntry) => void;
 }
 
-export const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onClose, onSave }) => {
+export const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, settings, onClose, onSave }) => {
   const [date, setDate] = useState(entry.date);
   const [hours, setHours] = useState(entry.hours);
   const [note, setNote] = useState(entry.note || '');
   const [rate, setRate] = useState(entry.rate);
   const [isWeekend, setIsWeekend] = useState(entry.isWeekend);
+  const [isHoliday, setIsHoliday] = useState(entry.isHoliday || false);
 
   useEffect(() => {
     const d = new Date(date);
-    setRate(getRateForDate(d));
+    setRate(getRateForDate(d, settings, isHoliday));
     setIsWeekend(isWeekendDay(d));
-  }, [date]);
+  }, [date, isHoliday, settings]);
 
   const handleSave = () => {
     onSave({
@@ -29,6 +31,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onClose, 
       hours,
       rate,
       isWeekend,
+      isHoliday,
       note,
       totalEarned: hours * rate
     });
@@ -58,6 +61,23 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onClose, 
                 className="bg-transparent w-full font-semibold text-gray-900 outline-none"
               />
             </div>
+          </div>
+
+          {/* Holiday Toggle */}
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 mb-2">Tipo de Día</label>
+            <button 
+              onClick={() => setIsHoliday(!isHoliday)}
+              className={`w-full p-3 rounded-xl border transition-all flex items-center justify-between group ${isHoliday ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-gray-50 border-gray-200 text-gray-500'}`}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className={isHoliday ? 'text-amber-500' : 'text-gray-400'} />
+                <span className="font-bold text-xs">{isHoliday ? 'Festivo' : 'Día Normal'}</span>
+              </div>
+              <div className={`w-8 h-4 rounded-full relative transition-colors ${isHoliday ? 'bg-amber-500' : 'bg-gray-300'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isHoliday ? 'left-4.5' : 'left-0.5'}`}></div>
+              </div>
+            </button>
           </div>
 
           {/* Hours */}

@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { getRateForDate, isWeekendDay, formatCurrency, formatDuration } from '../utils';
-import { WorkEntry } from '../types';
-import { Plus, Minus, CalendarDays, PenLine } from 'lucide-react';
+import { WorkEntry, AppSettings } from '../types';
+import { Plus, Minus, CalendarDays, PenLine, Sparkles } from 'lucide-react';
 
 interface AddHoursFormProps {
   onAdd: (entry: Omit<WorkEntry, 'id' | 'timestamp'>) => void;
+  settings: AppSettings;
 }
 
-export const AddHoursForm: React.FC<AddHoursFormProps> = ({ onAdd }) => {
+export const AddHoursForm: React.FC<AddHoursFormProps> = ({ onAdd, settings }) => {
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [hours, setHours] = useState<number>(1);
   const [note, setNote] = useState<string>('');
   const [currentRate, setCurrentRate] = useState<number>(0);
   const [isWeekend, setIsWeekend] = useState<boolean>(false);
+  const [isHoliday, setIsHoliday] = useState<boolean>(false);
 
   useEffect(() => {
     const dateObj = new Date(date);
-    const rate = getRateForDate(dateObj);
+    const rate = getRateForDate(dateObj, settings, isHoliday);
     setCurrentRate(rate);
     setIsWeekend(isWeekendDay(dateObj));
-  }, [date]);
+  }, [date, isHoliday, settings]);
 
   const handleAdd = () => {
     if (hours <= 0) return;
@@ -29,12 +31,14 @@ export const AddHoursForm: React.FC<AddHoursFormProps> = ({ onAdd }) => {
       hours,
       rate: currentRate,
       isWeekend,
+      isHoliday,
       totalEarned: hours * currentRate,
       note: note.trim()
     });
 
     setHours(1);
     setNote('');
+    setIsHoliday(false);
   };
 
   const increment = () => setHours(h => Math.min(h + 0.5, 24));
@@ -59,14 +63,30 @@ export const AddHoursForm: React.FC<AddHoursFormProps> = ({ onAdd }) => {
               />
            </div>
         </div>
-        <div className={`flex-1 p-5 rounded-3xl border shadow-sm flex flex-col justify-center transition-all duration-300 ${isWeekend ? 'bg-pink-50 border-pink-100' : 'bg-indigo-50 border-indigo-100'}`}>
-           <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Tarifa {isWeekend ? 'Extra' : 'Std'}</label>
+        <div className={`flex-1 p-5 rounded-3xl border shadow-sm flex flex-col justify-center transition-all duration-300 ${isHoliday ? 'bg-amber-50 border-amber-100' : (isWeekend ? 'bg-pink-50 border-pink-100' : 'bg-indigo-50 border-indigo-100')}`}>
+           <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Tarifa {isHoliday ? 'Festivo' : (isWeekend ? 'Extra' : 'Std')}</label>
            <div className="flex items-baseline gap-1">
-             <span className={`text-2xl font-black ${isWeekend ? 'text-pink-600' : 'text-indigo-600'}`}>{currentRate}€</span>
+             <span className={`text-2xl font-black ${isHoliday ? 'text-amber-600' : (isWeekend ? 'text-pink-600' : 'text-indigo-600')}`}>{currentRate}€</span>
              <span className="text-xs font-bold text-gray-400">/h</span>
            </div>
         </div>
       </div>
+
+      {/* Holiday Toggle */}
+      <button 
+        onClick={() => setIsHoliday(!isHoliday)}
+        className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between group ${isHoliday ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white border-gray-100 text-gray-500 hover:border-amber-200'}`}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-xl transition-colors ${isHoliday ? 'bg-white/20' : 'bg-amber-50 text-amber-600'}`}>
+            <Sparkles size={20} />
+          </div>
+          <span className="font-bold text-sm">¿Es día festivo?</span>
+        </div>
+        <div className={`w-12 h-6 rounded-full relative transition-colors ${isHoliday ? 'bg-white/30' : 'bg-gray-100'}`}>
+          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isHoliday ? 'left-7' : 'left-1'}`}></div>
+        </div>
+      </button>
 
       {/* 2. Main Hours Selector */}
       <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-100 border border-gray-100 overflow-hidden">

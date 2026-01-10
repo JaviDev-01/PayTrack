@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { generateId, formatCurrency, getStartOfWeek, addDays, formatDateRange, formatDuration, getMonthName, getBillingCycleRange } from './utils';
-import { WorkEntry, ViewMode, AppSettings } from './types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { generateId, formatCurrency, getStartOfWeek, addDays, formatDateRange, formatDuration, getMonthName, getBillingCycleRange, exportToExcel } from './utils';
+import { WorkEntry, ViewMode, AppSettings, DefaultRates } from './types';
 import { AddHoursForm } from './components/AddHoursForm';
 import { HistoryList } from './components/HistoryList';
 import { StatsChart } from './components/StatsChart';
@@ -47,7 +48,10 @@ const App: React.FC = () => {
     homeViewMode: 'currentMonth',
     customStartDate: '', 
     customEndDate: '',
-    billingCycleStartDay: 1
+    billingCycleStartDay: 1,
+    rateWeekday: DefaultRates.WEEKDAY,
+    rateSaturday: DefaultRates.SATURDAY,
+    rateHoliday: DefaultRates.HOLIDAY
   };
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
 
@@ -253,8 +257,9 @@ const App: React.FC = () => {
       totalEarned: acc.totalEarned + curr.totalEarned,
       daysWorked: acc.daysWorked + 1,
       weekdayHours: acc.weekdayHours + (curr.isWeekend ? 0 : curr.hours),
-      weekendHours: acc.weekendHours + (curr.isWeekend ? curr.hours : 0)
-    }), { totalHours: 0, totalEarned: 0, daysWorked: 0, weekdayHours: 0, weekendHours: 0 });
+      weekendHours: acc.weekendHours + (curr.isWeekend && !curr.isHoliday ? curr.hours : 0),
+      holidayHours: acc.holidayHours + (curr.isHoliday ? curr.hours : 0)
+    }), { totalHours: 0, totalEarned: 0, daysWorked: 0, weekdayHours: 0, weekendHours: 0, holidayHours: 0 });
 
     const startStr = currentWeekStart.toISOString().split('T')[0];
     const endStr = currentWeekEnd.toISOString().split('T')[0];
@@ -265,9 +270,10 @@ const App: React.FC = () => {
       totalHours: acc.totalHours + curr.hours,
       totalEarned: acc.totalEarned + curr.totalEarned,
       daysWorked: acc.daysWorked + 1,
-      weekdayHours: acc.weekdayHours + (curr.isWeekend ? 0 : curr.hours),
-      weekendHours: acc.weekendHours + (curr.isWeekend ? curr.hours : 0)
-    }), { totalHours: 0, totalEarned: 0, daysWorked: 0, weekdayHours: 0, weekendHours: 0 });
+      weekdayHours: acc.weekdayHours + (!curr.isWeekend && !curr.isHoliday ? curr.hours : 0),
+      weekendHours: acc.weekendHours + (curr.isWeekend && !curr.isHoliday ? curr.hours : 0),
+      holidayHours: acc.holidayHours + (curr.isHoliday ? curr.hours : 0)
+    }), { totalHours: 0, totalEarned: 0, daysWorked: 0, weekdayHours: 0, weekendHours: 0, holidayHours: 0 });
 
     return { global, weekly, weeklyEntries };
   }, [entries, currentWeekStart, currentWeekEnd]);
@@ -432,6 +438,7 @@ const App: React.FC = () => {
       {editingEntry && (
         <EditEntryModal 
           entry={editingEntry} 
+          settings={settings}
           onClose={() => setEditingEntry(null)} 
           onSave={handleUpdateEntry} 
         />
@@ -455,141 +462,171 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="px-5 py-4 flex-grow overflow-y-auto no-scrollbar pb-32">
-        
-        {view === 'add' && (
-           <div className="animate-fade-in space-y-6">
-              {/* MONTHLY Summary Card (Now Specific to Current Month) */}
-              <div className="bg-gray-900 rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200 text-white relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
-                
-                <div className="relative z-10">
-                   <div className="flex justify-between items-start mb-8">
-                     <div className="bg-white/10 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
-                       <p className="text-xs font-bold uppercase tracking-wider text-white/80 flex items-center gap-2">
-                         <Calendar size={12} />
-                         {settings.homeViewMode === 'custom' 
-                            ? (settings.customStartDate && settings.customEndDate 
-                                ? `${settings.customStartDate.substring(5)} - ${settings.customEndDate.substring(5)}`
-                                : 'Rango Personalizado')
-                            : formatDateRange(getBillingCycleRange(settings.billingCycleStartDay || 1).start, getBillingCycleRange(settings.billingCycleStartDay || 1).end)}
-                       </p>
-                     </div>
-                   </div>
-                   
-                   <div className="flex flex-col gap-1">
-                      <span className="text-5xl font-black tracking-tight">{formatCurrency(homeStats.totalEarned).split(',')[0]}<span className="text-2xl text-white/40">,{formatCurrency(homeStats.totalEarned).split(',')[1]}</span></span>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Clock size={14} className="text-white/40" />
-                        <p className="text-sm font-medium text-white/60"><span className="text-white font-bold">{formatDuration(homeStats.totalHours)}</span> {settings.homeViewMode === 'custom' ? 'en periodo' : 'en este ciclo'}</p>
-                      </div>
-                   </div>
+        <AnimatePresence mode="wait">
+          {view === 'add' && (
+            <motion.div 
+              key="add"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+                {/* MONTHLY Summary Card */}
+                <div className="bg-gray-900 rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200 text-white relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                  <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-8">
+                        <div className="bg-white/10 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
+                          <p className="text-xs font-bold uppercase tracking-wider text-white/80 flex items-center gap-2">
+                            <Calendar size={12} />
+                            {settings.homeViewMode === 'custom' 
+                                ? (settings.customStartDate && settings.customEndDate 
+                                    ? `${settings.customStartDate.substring(5)} - ${settings.customEndDate.substring(5)}`
+                                    : 'Rango Personalizado')
+                                : formatDateRange(getBillingCycleRange(settings.billingCycleStartDay || 1).start, getBillingCycleRange(settings.billingCycleStartDay || 1).end)}
+                          </p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1">
+                        <span className="text-5xl font-black tracking-tight">{formatCurrency(homeStats.totalEarned).split(',')[0]}<span className="text-2xl text-white/40">,{formatCurrency(homeStats.totalEarned).split(',')[1]}</span></span>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Clock size={14} className="text-white/40" />
+                          <p className="text-sm font-medium text-white/60"><span className="text-white font-bold">{formatDuration(homeStats.totalHours)}</span> {settings.homeViewMode === 'custom' ? 'en periodo' : 'en este ciclo'}</p>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
+                <AddHoursForm onAdd={handleAddEntry} settings={settings} />
+            </motion.div>
+          )}
+
+          {view === 'history' && (
+            <motion.div 
+              key="history"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2 className="text-xl font-bold text-gray-900 mb-4 px-1">Tus Registros</h2>
+              <HistoryList 
+                entries={entries} 
+                onDelete={handleDeleteEntry} 
+                onEdit={setEditingEntry} 
+                userName={userName} 
+              />
+            </motion.div>
+          )}
+
+          {view === 'stats' && (
+            <motion.div 
+              key="stats"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6 pb-4"
+            >
+              {/* 1. Global Stats Card */}
+              <div className="bg-gray-900 rounded-[2rem] p-6 shadow-xl text-white relative overflow-hidden">
+                <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div className="relative z-10 flex justify-between items-end">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Total Acumulado</p>
+                      <p className="text-3xl font-black">{formatCurrency(filteredStats.global.totalEarned)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-400">{formatDuration(filteredStats.global.totalHours)}</p>
+                      <p className="text-[10px] text-gray-500">Horas totales</p>
+                    </div>
                 </div>
               </div>
 
-              <AddHoursForm onAdd={handleAddEntry} />
-           </div>
-        )}
+              <div className="flex items-center justify-between pt-2">
+                <h2 className="text-lg font-bold text-gray-900 px-1">Esta Semana</h2>
+                {/* Week Selector Control */}
+                <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-100">
+                    <button onClick={() => setWeekOffset(o => o - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-50 rounded-full text-gray-400 transition-colors">
+                      <ChevronLeft size={16} />
+                    </button>
+                    <div className="px-2">
+                      <span className="text-[10px] font-bold text-gray-800 whitespace-nowrap uppercase">
+                        {formatDateRange(currentWeekStart, currentWeekEnd)}
+                      </span>
+                    </div>
+                    <button onClick={() => setWeekOffset(o => o + 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-50 rounded-full text-gray-400 transition-colors">
+                      <ChevronRight size={16} />
+                    </button>
+                </div>
+              </div>
 
-        {view === 'history' && (
-          <div className="animate-fade-in">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 px-1">Tus Registros</h2>
-            <HistoryList 
-              entries={entries} 
-              onDelete={handleDeleteEntry} 
-              onEdit={setEditingEntry} 
-              userName={userName} 
-            />
-          </div>
-        )}
+              {/* Weekly Detailed Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Earnings Card */}
+                <div className="col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase mb-1">Ganancia Semanal</p>
+                      <p className="text-3xl font-black text-gray-900">{formatCurrency(filteredStats.weekly.totalEarned)}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                      <TrendingUp size={24} />
+                    </div>
+                </div>
 
-        {view === 'stats' && (
-          <div className="space-y-6 animate-fade-in pb-4">
-             {/* 1. Global Stats Card (Moved Here) */}
-             <div className="bg-gray-900 rounded-[2rem] p-6 shadow-xl text-white relative overflow-hidden">
-               <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
-               <div className="relative z-10 flex justify-between items-end">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Total Acumulado</p>
-                    <p className="text-3xl font-black">{formatCurrency(filteredStats.global.totalEarned)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-400">{formatDuration(filteredStats.global.totalHours)}</p>
-                    <p className="text-[10px] text-gray-500">Horas totales</p>
-                  </div>
-               </div>
-             </div>
+                {/* Weekday Hours */}
+                <div className="bg-indigo-50 p-5 rounded-[1.8rem] border border-indigo-100 flex flex-col justify-center">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Briefcase size={16} className="text-indigo-500" />
+                      <span className="text-xs font-bold text-indigo-400 uppercase">Diario</span>
+                    </div>
+                    <p className="text-xl font-black text-indigo-900">{formatDuration(filteredStats.weekly.weekdayHours)}</p>
+                </div>
 
-            <div className="flex items-center justify-between pt-2">
-               <h2 className="text-lg font-bold text-gray-900 px-1">Esta Semana</h2>
-               {/* Week Selector Control */}
-               <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-100">
-                  <button onClick={() => setWeekOffset(o => o - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-50 rounded-full text-gray-400 transition-colors">
-                    <ChevronLeft size={16} />
-                  </button>
-                  <div className="px-2">
-                    <span className="text-[10px] font-bold text-gray-800 whitespace-nowrap uppercase">
-                       {formatDateRange(currentWeekStart, currentWeekEnd)}
-                    </span>
-                  </div>
-                  <button onClick={() => setWeekOffset(o => o + 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-50 rounded-full text-gray-400 transition-colors">
-                    <ChevronRight size={16} />
-                  </button>
-               </div>
-            </div>
+                {/* Weekend/Holiday Hours */}
+                <div className="bg-pink-50 p-5 rounded-[1.8rem] border border-pink-100 flex flex-col justify-center">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Coffee size={16} className="text-pink-500" />
+                      <span className="text-xs font-bold text-pink-400 uppercase">Fatos/Sáb</span>
+                    </div>
+                    <p className="text-xl font-black text-pink-900">{formatDuration(filteredStats.weekly.weekendHours + filteredStats.weekly.holidayHours)}</p>
+                </div>
+              </div>
 
-            {/* Weekly Detailed Cards */}
-            <div className="grid grid-cols-2 gap-4">
-               {/* Earnings Card */}
-               <div className="col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between">
-                  <div>
-                     <p className="text-xs font-bold text-gray-400 uppercase mb-1">Ganancia Semanal</p>
-                     <p className="text-3xl font-black text-gray-900">{formatCurrency(filteredStats.weekly.totalEarned)}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-                    <TrendingUp size={24} />
-                  </div>
-               </div>
+              {/* Weekly Chart */}
+              <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Gráfico Diario</h3>
+                </div>
+                <StatsChart data={filteredStats.weeklyEntries} weekStart={currentWeekStart} />
+              </div>
+            </motion.div>
+          )}
 
-               {/* Weekday Hours */}
-               <div className="bg-indigo-50 p-5 rounded-[1.8rem] border border-indigo-100 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Briefcase size={16} className="text-indigo-500" />
-                    <span className="text-xs font-bold text-indigo-400 uppercase">Diario</span>
-                  </div>
-                  <p className="text-xl font-black text-indigo-900">{formatDuration(filteredStats.weekly.weekdayHours)}</p>
-               </div>
-
-               {/* Weekend Hours */}
-               <div className="bg-pink-50 p-5 rounded-[1.8rem] border border-pink-100 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Coffee size={16} className="text-pink-500" />
-                    <span className="text-xs font-bold text-pink-400 uppercase">Finde</span>
-                  </div>
-                  <p className="text-xl font-black text-pink-900">{formatDuration(filteredStats.weekly.weekendHours)}</p>
-               </div>
-            </div>
-
-            {/* Weekly Chart */}
-            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
-               <div className="flex items-center justify-between mb-4">
-                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Gráfico Diario</h3>
-               </div>
-               <StatsChart data={filteredStats.weeklyEntries} weekStart={currentWeekStart} />
-            </div>
-          </div>
-        )}
-
-        {view === 'settings' && (
-          <SettingsView 
-            userName={userName} 
-            entries={entries} 
-            settings={settings}
-            onUpdateSettings={setSettings}
-            onLogout={handleLogout} 
-            onClearData={handleClearData}
-          />
-        )}
+          {view === 'settings' && (
+            <motion.div 
+              key="settings"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SettingsView 
+                userName={userName} 
+                entries={entries} 
+                settings={settings}
+                onUpdateSettings={setSettings}
+                onLogout={handleLogout} 
+                onClearData={handleClearData}
+                onExportExcel={() => exportToExcel(entries, userName)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* RESTORED BOTTOM NAVIGATION (FIXED BAR) */}

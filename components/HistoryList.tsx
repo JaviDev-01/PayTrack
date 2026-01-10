@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { WorkEntry } from '../types';
-import { formatCurrency, downloadCSV, formatDuration } from '../utils';
-import { Trash2, Download, FileText, Pencil, Filter, Clock } from 'lucide-react';
+import { formatCurrency, exportToExcel, formatDuration } from '../utils';
+import { Trash2, Download, FileText, Pencil, Filter, Clock, FileSpreadsheet } from 'lucide-react';
 
 interface HistoryListProps {
   entries: WorkEntry[];
@@ -36,10 +36,11 @@ export const HistoryList: React.FC<HistoryListProps> = ({ entries, onDelete, onE
          </div>
          
          <button 
-           onClick={() => downloadCSV(sortedEntries, userName || 'user')}
-           className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+           onClick={() => exportToExcel(sortedEntries, userName || 'user')}
+           className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-full hover:bg-emerald-100 transition-colors"
+           title="Exportar estos registros a Excel"
          >
-           <Download size={14} />
+           <FileSpreadsheet size={14} />
          </button>
       </div>
 

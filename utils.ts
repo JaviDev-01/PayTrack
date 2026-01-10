@@ -1,4 +1,7 @@
-import { RateType, WorkEntry } from './types';
+import * as XLSX from 'xlsx';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { DefaultRates, WorkEntry, AppSettings } from './types';
 
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('es-ES', {
@@ -58,11 +61,17 @@ export const addDays = (date: Date, days: number): Date => {
   return result;
 };
 
-export const getRateForDate = (date: Date): number => {
+export const getRateForDate = (date: Date, settings: AppSettings, isHoliday?: boolean): number => {
+  if (isHoliday) return settings.rateHoliday || DefaultRates.HOLIDAY;
   const day = date.getDay();
-  // 0 is Sunday, 6 is Saturday
-  const isWeekend = day === 6 || day === 0;
-  return isWeekend ? RateType.WEEKEND : RateType.WEEKDAY;
+  // 6 is Saturday
+  if (day === 6) return settings.rateSaturday || DefaultRates.SATURDAY;
+  // Others (Sunday is also usually standard unless marked as holiday, or user wants it separate. 
+  // User said: "lunes-viernes, sabados y luegi tambien festivos")
+  // So Sunday falls into Weekday or Holiday? Usually Sunday is treated as Friday/Weekday in his request 
+  // unless it's a holiday. But he didn't specify Sunday. 
+  // Let's assume Saturday is special, Holiday is special, and rest is "Weekday".
+  return settings.rateWeekday || DefaultRates.WEEKDAY;
 };
 
 export const isWeekendDay = (date: Date): boolean => {
@@ -74,29 +83,53 @@ export const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
-// New function to export data
-export const downloadCSV = (entries: WorkEntry[], userName: string) => {
-  const headers = ['Fecha', 'Horas', 'Tarifa', 'Total', 'Nota', 'Tipo'];
-  const rows = entries.map(e => [
-    e.date,
-    e.hours,
-    e.rate,
-    e.totalEarned,
-    `"${e.note || ''}"`,
-    e.isWeekend ? 'Fin de semana' : 'Diario'
-  ]);
+export const exportToExcel = async (entries: WorkEntry[], userName: string) => {
+  const worksheetData = entries.map(e => ({
+    'Fecha': e.date,
+    'Horas': e.hours,
+    'Tarifa (€/h)': e.rate,
+    'Total (€)': e.totalEarned,
+    'Tipo': e.isHoliday ? 'Festivo' : (e.isWeekend ? 'Sábado' : 'Diario'),
+    'Nota': e.note || ''
+  }));
 
-  const csvContent = "data:text/csv;charset=utf-8," 
-    + headers.join(",") + "\n" 
-    + rows.map(e => e.join(",")).join("\n");
+  const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Horas Extra");
 
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `horas_extra_${userName}_${new Date().toISOString().split('T')[0]}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // Generate buffer
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const fileName = `HorasExtra_${userName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+  try {
+    // Check if we are on mobile (Capacitor)
+    if (window.hasOwnProperty('Capacitor')) {
+      const base64 = btoa(new Uint8Array(excelBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+      
+      const savedFile = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache
+      });
+
+      await Share.share({
+        title: 'Exportar Horas Extra',
+        url: savedFile.uri,
+      });
+    } else {
+      // Browser download
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    }
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    alert('Error al exportar a Excel');
+  }
 };
 
 export const getBillingCycleRange = (startDay: number): { start: Date, end: Date } => {
