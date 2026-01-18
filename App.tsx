@@ -6,7 +6,7 @@ import { AddHoursForm } from './components/AddHoursForm';
 import { HistoryList } from './components/HistoryList';
 import { StatsChart } from './components/StatsChart';
 import { EditEntryModal } from './components/EditEntryModal';
-import { TutorialOverlay } from './components/TutorialOverlay';
+import { HelpModal } from './components/HelpModal';
 import { SettingsView } from './components/SettingsView';
 import { NeoCard } from './components/ui/NeoCard';
 import { NeoButton } from './components/ui/NeoButton';
@@ -31,9 +31,11 @@ const App: React.FC = () => {
   // Edit State
   const [editingEntry, setEditingEntry] = useState<WorkEntry | null>(null);
 
-  // Tutorial State
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
+  // Month Selection State
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Help Modal State
+  const [showHelp, setShowHelp] = useState(false);
 
   // OTA State
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'available' | 'downloading' | 'installing' | 'ready' | 'restarting'>('idle');
@@ -51,7 +53,8 @@ const App: React.FC = () => {
     billingCycleStartDay: 1,
     rateWeekday: DefaultRates.WEEKDAY,
     rateSaturday: DefaultRates.SATURDAY,
-    rateHoliday: DefaultRates.HOLIDAY
+    rateHoliday: DefaultRates.HOLIDAY,
+    taxPercentage: 0
   };
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
 
@@ -68,24 +71,20 @@ const App: React.FC = () => {
           try {
             const parsed = JSON.parse(saved);
             setEntries(parsed);
-            if (parsed.length === 0) {
-              setShowTutorial(true);
-              setTutorialStep(0);
-            }
           } catch (e) {
             setEntries([]);
-            setShowTutorial(true);
           }
         } else {
           setEntries([]);
-          setShowTutorial(true);
         }
 
         // Load Settings
         const savedSettings = localStorage.getItem(settingsKey);
         if (savedSettings) {
           try {
-            setSettings(JSON.parse(savedSettings));
+            const parsedSettings = JSON.parse(savedSettings);
+            // MERGE with defaultSettings to ensure new fields like taxPercentage are present
+            setSettings({ ...defaultSettings, ...parsedSettings });
           } catch (e) {
             setSettings(defaultSettings);
           }
@@ -166,7 +165,9 @@ const App: React.FC = () => {
       setUserName(null);
       setEntries([]);
       setView('add');
-      setShowTutorial(false);
+      setUserName(null);
+      setEntries([]);
+      setView('add');
     }
   };
 
@@ -198,48 +199,55 @@ const App: React.FC = () => {
     setEditingEntry(null);
   };
 
-  // Tutorial Logic
-  const handleTutorialNext = () => {
-    setTutorialStep(prev => prev + 1);
+  // Month Navigation
+  const handlePrevMonth = () => {
+    setSelectedDate(prev => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() - 1);
+      return d;
+    });
   };
 
-  const handleTutorialSkip = () => {
-    setShowTutorial(false);
-    setTutorialStep(0);
+  const handleNextMonth = () => {
+    setSelectedDate(prev => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() + 1);
+      return d;
+    });
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
   };
 
   // --- STATS LOGIC ---
   
   // 1. Home Stats (Configurable)
   const homeStats = useMemo(() => {
-    // Custom Range Mode
+    let start: Date, end: Date;
+
     if (settings.homeViewMode === 'custom' && settings.customStartDate && settings.customEndDate) {
-        const start = settings.customStartDate;
-        const end = settings.customEndDate;
-        const rangeEntries = entries.filter(e => e.date >= start && e.date <= end);
-        return rangeEntries.reduce((acc, curr) => ({
-             totalEarned: acc.totalEarned + curr.totalEarned,
-             totalHours: acc.totalHours + curr.hours,
-        }), { totalEarned: 0, totalHours: 0 });
+      start = new Date(settings.customStartDate);
+      end = new Date(settings.customEndDate);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      const range = getBillingCycleRange(settings.billingCycleStartDay || 1);
+      start = range.start;
+      end = range.end;
     }
 
-    // Mode: Current Period (Monthly or Billing Cycle)
-    const { start, end } = getBillingCycleRange(settings.billingCycleStartDay || 1);
-    
-    // We compare strings for consistency with other parts of the app, 
-    // or just use timestamps/dates. entries date is YYYY-MM-DD.
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
-
     const periodEntries = entries.filter(e => e.date >= startStr && e.date <= endStr);
 
     return periodEntries.reduce((acc, curr) => ({
-      totalEarned: acc.totalEarned + curr.totalEarned,
-      totalHours: acc.totalHours + curr.hours,
+      totalEarned: acc.totalEarned + (curr.totalEarned || 0),
+      totalHours: acc.totalHours + (curr.hours || 0),
     }), { totalEarned: 0, totalHours: 0 });
   }, [entries, settings]);
 
-  // 2. Weekly & Global Stats (For Stats Screen)
+  // 2. Weekly Range (Selection)
   const currentWeekStart = useMemo(() => {
     const today = new Date();
     const start = getStartOfWeek(today);
@@ -250,33 +258,43 @@ const App: React.FC = () => {
     return addDays(currentWeekStart, 6);
   }, [currentWeekStart]);
 
+  // 3. Filtered Stats (For Stats View & History) -> NOW USES SELECTED DATE
   const filteredStats = useMemo(() => {
-    // Global stats
-    const global = entries.reduce((acc, curr) => ({
-      totalHours: acc.totalHours + curr.hours,
-      totalEarned: acc.totalEarned + curr.totalEarned,
-      daysWorked: acc.daysWorked + 1,
-      weekdayHours: acc.weekdayHours + (curr.isWeekend ? 0 : curr.hours),
-      weekendHours: acc.weekendHours + (curr.isWeekend && !curr.isHoliday ? curr.hours : 0),
-      holidayHours: acc.holidayHours + (curr.isHoliday ? curr.hours : 0)
+    // A. Month/Cycle Stats
+    const { start: pStart, end: pEnd } = getBillingCycleRange(settings.billingCycleStartDay || 1, selectedDate);
+    const pStartStr = pStart.toISOString().split('T')[0];
+    const pEndStr = pEnd.toISOString().split('T')[0];
+    
+    const periodEntries = entries.filter(e => e.date >= pStartStr && e.date <= pEndStr);
+    const uniqueDaysPeriod = new Set(periodEntries.map(e => e.date));
+
+    const global = periodEntries.reduce((acc, curr) => ({
+      totalEarned: acc.totalEarned + (curr.totalEarned || 0),
+      totalHours: acc.totalHours + (curr.hours || 0),
+      daysWorked: uniqueDaysPeriod.size,
+      weekdayHours: acc.weekdayHours + (!curr.isWeekend && !curr.isHoliday ? (curr.hours || 0) : 0),
+      weekendHours: acc.weekendHours + (curr.isWeekend && !curr.isHoliday ? (curr.hours || 0) : 0),
+      holidayHours: acc.holidayHours + (curr.isHoliday ? (curr.hours || 0) : 0)
     }), { totalHours: 0, totalEarned: 0, daysWorked: 0, weekdayHours: 0, weekendHours: 0, holidayHours: 0 });
 
-    const startStr = currentWeekStart.toISOString().split('T')[0];
-    const endStr = currentWeekEnd.toISOString().split('T')[0];
-
-    const weeklyEntries = entries.filter(e => e.date >= startStr && e.date <= endStr);
+    // B. Weekly Stats (for chart)
+    const wStartStr = currentWeekStart.toISOString().split('T')[0];
+    const wEndStr = currentWeekEnd.toISOString().split('T')[0];
     
+    const weeklyEntries = entries.filter(e => e.date >= wStartStr && e.date <= wEndStr);
+    const uniqueDaysWeekly = new Set(weeklyEntries.map(e => e.date));
+
     const weekly = weeklyEntries.reduce((acc, curr) => ({
-      totalHours: acc.totalHours + curr.hours,
-      totalEarned: acc.totalEarned + curr.totalEarned,
-      daysWorked: acc.daysWorked + 1,
-      weekdayHours: acc.weekdayHours + (!curr.isWeekend && !curr.isHoliday ? curr.hours : 0),
-      weekendHours: acc.weekendHours + (curr.isWeekend && !curr.isHoliday ? curr.hours : 0),
-      holidayHours: acc.holidayHours + (curr.isHoliday ? curr.hours : 0)
+      totalEarned: acc.totalEarned + (curr.totalEarned || 0),
+      totalHours: acc.totalHours + (curr.hours || 0),
+      daysWorked: uniqueDaysWeekly.size,
+      weekdayHours: acc.weekdayHours + (!curr.isWeekend && !curr.isHoliday ? (curr.hours || 0) : 0),
+      weekendHours: acc.weekendHours + (curr.isWeekend && !curr.isHoliday ? (curr.hours || 0) : 0),
+      holidayHours: acc.holidayHours + (curr.isHoliday ? (curr.hours || 0) : 0)
     }), { totalHours: 0, totalEarned: 0, daysWorked: 0, weekdayHours: 0, weekendHours: 0, holidayHours: 0 });
 
     return { global, weekly, weeklyEntries };
-  }, [entries, currentWeekStart, currentWeekEnd]);
+  }, [entries, settings.billingCycleStartDay, selectedDate, currentWeekStart, currentWeekEnd]);
 
 
   // --- LOADING SCREEN ---
@@ -426,13 +444,7 @@ const App: React.FC = () => {
       
       {renderUpdateOverlay()}
       
-      {/* Tutorial Overlay */}
-      <TutorialOverlay 
-        active={showTutorial} 
-        step={tutorialStep} 
-        onNext={handleTutorialNext}
-        onSkip={handleTutorialSkip}
-      />
+      {renderUpdateOverlay()}
 
       {/* Edit Modal */}
       {editingEntry && (
@@ -492,10 +504,16 @@ const App: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-col gap-1">
-                        <span className="text-5xl font-black tracking-tight">{formatCurrency(homeStats.totalEarned).split(',')[0]}<span className="text-2xl text-white/40">,{formatCurrency(homeStats.totalEarned).split(',')[1]}</span></span>
+                        <span className="text-5xl font-black tracking-tight">
+                          {formatCurrency(homeStats.totalEarned * (1 - (settings.taxPercentage || 0) / 100)).split(',')[0]}
+                          <span className="text-2xl text-white/40">,{formatCurrency(homeStats.totalEarned * (1 - (settings.taxPercentage || 0) / 100)).split(',')[1]}</span>
+                        </span>
                         <div className="flex items-center gap-2 mt-2">
                           <Clock size={14} className="text-white/40" />
-                          <p className="text-sm font-medium text-white/60"><span className="text-white font-bold">{formatDuration(homeStats.totalHours)}</span> {settings.homeViewMode === 'custom' ? 'en periodo' : 'en este ciclo'}</p>
+                          <p className="text-xs font-medium text-white/60">
+                            <span className="text-white font-bold">{formatDuration(homeStats.totalHours)}</span> {settings.homeViewMode === 'custom' ? 'en periodo' : 'en este ciclo'}
+                            {(settings.taxPercentage || 0) > 0 && <span className="text-emerald-400 font-bold ml-1.5">(Neto)</span>}
+                          </p>
                         </div>
                     </div>
                   </div>
@@ -532,18 +550,67 @@ const App: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="space-y-6 pb-4"
             >
-              {/* 1. Global Stats Card */}
-              <div className="bg-gray-900 rounded-[2rem] p-6 shadow-xl text-white relative overflow-hidden">
-                <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                <div className="relative z-10 flex justify-between items-end">
+              {/* Month Selector for Stats */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                    <Calendar size={18} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 leading-tight">Estadísticas</h2>
+                  </div>
+                </div>
+                
+                <div className="flex items-center bg-white rounded-2xl p-1 shadow-sm border border-gray-100">
+                    <button onClick={handlePrevMonth} className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-xl text-gray-400 transition-colors">
+                      <ChevronLeft size={18} />
+                    </button>
+                    <div className="px-3 min-w-[100px] text-center">
+                      <span className="text-sm font-black text-gray-900 capitalize">
+                        {getMonthName(selectedDate)}
+                      </span>
+                    </div>
+                    <button onClick={handleNextMonth} className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-xl text-gray-400 transition-colors">
+                      <ChevronRight size={18} />
+                    </button>
+                </div>
+              </div>
+
+              {/* 1. Global Stats Card with Gross/Net */}
+              <div className="bg-gray-900 rounded-[2.5rem] p-8 shadow-2xl text-white relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-pink-500/10 rounded-full blur-3xl"></div>
+                
+                <div className="relative z-10">
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Resumen del Periodo</p>
+                  <div className="flex justify-between items-end mb-6">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Total Acumulado</p>
-                      <p className="text-3xl font-black">{formatCurrency(filteredStats.global.totalEarned)}</p>
+                      <span className="text-5xl font-black tracking-tighter">
+                        {formatCurrency(filteredStats.global.totalEarned * (1 - (settings.taxPercentage || 0) / 100)).split(',')[0]}
+                        <span className="text-2xl text-white/40">,{formatCurrency(filteredStats.global.totalEarned * (1 - (settings.taxPercentage || 0) / 100)).split(',')[1]}</span>
+                      </span>
+                      {(settings.taxPercentage || 0) > 0 && (
+                        <p className="text-xs font-medium text-emerald-400 mt-1">Cálculo en Neto (-{settings.taxPercentage}%)</p>
+                      )}
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-400">{formatDuration(filteredStats.global.totalHours)}</p>
-                      <p className="text-[10px] text-gray-500">Horas totales</p>
+                      <p className="text-xl font-bold text-white mb-0.5">{formatDuration(filteredStats.global.totalHours)}</p>
+                      <p className="text-[10px] uppercase font-bold text-white/40 tracking-wider">Horas totales</p>
                     </div>
+                  </div>
+
+                  {(settings.taxPercentage || 0) > 0 && (
+                    <div className="pt-4 border-t border-white/5 flex justify-between">
+                      <div>
+                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Bruto</p>
+                        <p className="text-sm font-bold text-white/60">{formatCurrency(filteredStats.global.totalEarned)}</p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Días</p>
+                         <p className="text-sm font-bold text-white/60">{filteredStats.global.daysWorked}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -623,11 +690,15 @@ const App: React.FC = () => {
                 onLogout={handleLogout} 
                 onClearData={handleClearData}
                 onExportExcel={() => exportToExcel(entries, userName)}
+                onOpenHelp={() => setShowHelp(true)}
               />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Help Modal */}
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* RESTORED BOTTOM NAVIGATION (FIXED BAR) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-stretch pb-safe z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">

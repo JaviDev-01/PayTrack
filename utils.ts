@@ -132,11 +132,10 @@ export const exportToExcel = async (entries: WorkEntry[], userName: string) => {
   }
 };
 
-export const getBillingCycleRange = (startDay: number): { start: Date, end: Date } => {
-  const today = new Date();
-  const currentDay = today.getDate();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
+export const getBillingCycleRange = (startDay: number, referenceDate: Date = new Date()): { start: Date, end: Date } => {
+  const currentDay = referenceDate.getDate();
+  const currentMonth = referenceDate.getMonth();
+  const currentYear = referenceDate.getFullYear();
 
   let start: Date;
   let end: Date;

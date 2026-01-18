@@ -1,7 +1,6 @@
 import React from 'react';
-import { User, Download, Trash2, Shield, FileText, LogOut, Github, CalendarDays, Coins, FileSpreadsheet } from 'lucide-react';
+import { Download, Trash2, Shield, FileText, LogOut, CalendarDays, Coins, FileSpreadsheet } from 'lucide-react';
 import { WorkEntry, AppSettings } from '../types';
-import { exportToExcel } from '../utils';
 
 interface SettingsViewProps {
   userName: string;
@@ -11,9 +10,19 @@ interface SettingsViewProps {
   onLogout: () => void;
   onClearData: () => void;
   onExportExcel: () => void;
+  onOpenHelp: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, settings, onUpdateSettings, onLogout, onClearData, onExportExcel }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ 
+  userName, 
+  entries, 
+  settings, 
+  onUpdateSettings, 
+  onLogout, 
+  onClearData, 
+  onExportExcel,
+  onOpenHelp 
+}) => {
   return (
     <div className="space-y-6 animate-fade-in pb-24">
       <h2 className="text-xl font-bold text-gray-900 px-1">Configuración</h2>
@@ -34,6 +43,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
           className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
           title="Cerrar Sesión"
         >
+          <LogOut size={20} />
         </button>
       </div>
 
@@ -43,7 +53,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
            <div className="bg-emerald-50 text-emerald-500 p-2 rounded-lg">
              <CalendarDays size={18} />
            </div>
-           <h3 className="font-bold text-gray-900">Rango de Ingresos (Inicio)</h3>
+           <h3 className="font-bold text-gray-900">Rango de Ingresos</h3>
         </div>
         
         <div className='flex p-1 bg-gray-50 rounded-xl'>
@@ -51,7 +61,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
                onClick={() => onUpdateSettings({ ...settings, homeViewMode: 'currentMonth' })}
                className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${settings.homeViewMode === 'currentMonth' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
-                Mes Actual
+                Ciclo Mensual
             </button>
             <button 
                onClick={() => onUpdateSettings({ ...settings, homeViewMode: 'custom' })}
@@ -63,7 +73,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
 
         {settings.homeViewMode === 'currentMonth' && (
              <div className='animate-fade-in'>
-                <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Día de inicio del ciclo mensual</label>
+                <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Día de inicio del ciclo</label>
                 <div className='flex items-center gap-3'>
                     <input 
                         type='number' 
@@ -74,7 +84,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
                         onChange={(e) => onUpdateSettings({ ...settings, billingCycleStartDay: parseInt(e.target.value) || 1 })}
                     />
                     <p className='text-[10px] text-gray-400 font-medium'>
-                        Ejemplo: Si pones 20, el ciclo será del 20 al 19 del mes siguiente.
+                        Ej: Si pones 20, el ciclo va del 20 al 19 del mes siguiente.
                     </p>
                 </div>
              </div>
@@ -102,6 +112,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
                 </div>
             </div>
         )}
+
+        {/* IRPF Config */}
+        <div className='pt-4 border-t border-gray-100'>
+            <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 block px-1'>Retención IRPF (%)</label>
+            <div className='flex items-center gap-3'>
+                <input 
+                    type='number' 
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className='w-24 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 transition-colors'
+                    value={settings.taxPercentage || 0}
+                    onChange={(e) => onUpdateSettings({ ...settings, taxPercentage: parseFloat(e.target.value) || 0 })}
+                />
+                <p className='text-[10px] text-gray-400 font-medium'>
+                    Se descontará de tus ganancias brutas en las estadísticas.
+                </p>
+            </div>
+        </div>
       </div>
 
       {/* Rate Settings */}
@@ -110,14 +139,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
            <div className="bg-amber-50 text-amber-500 p-2 rounded-lg">
              <Coins size={18} />
            </div>
-           <h3 className="font-bold text-gray-900">Tarifas Personalizadas (€/h)</h3>
+           <h3 className="font-bold text-gray-900">Tarifas (€/h)</h3>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-all active:scale-[0.98]">
                 <div>
                    <p className="text-xs font-bold text-gray-900">Lunes a Viernes</p>
-                   <p className="text-[10px] text-gray-400 font-medium tracking-wide">Tarifa Estándar</p>
+                   <p className="text-[10px] text-gray-400 font-medium uppercase">Estándar</p>
                 </div>
                 <input 
                     type="number" 
@@ -128,10 +157,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
                 />
             </div>
 
-            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-all active:scale-[0.98]">
                 <div>
                    <p className="text-xs font-bold text-gray-900">Sábados</p>
-                   <p className="text-[10px] text-gray-400 font-medium tracking-wide">Tarifa Extra Sábado</p>
+                   <p className="text-[10px] text-gray-400 font-medium uppercase">Extra Sábado</p>
                 </div>
                 <input 
                     type="number" 
@@ -142,10 +171,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
                 />
             </div>
 
-            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-all active:scale-[0.98]">
                 <div>
                    <p className="text-xs font-bold text-gray-900">Festivos</p>
-                   <p className="text-[10px] text-gray-400 font-medium tracking-wide">Tarifa Especial Festivo</p>
+                   <p className="text-[10px] text-gray-400 font-medium uppercase">Especial Festivo</p>
                 </div>
                 <input 
                     type="number" 
@@ -158,13 +187,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
         </div>
       </div>
 
+      {/* Help Section */}
+      <div className="space-y-3">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Soporte</p>
+        <button 
+           onClick={onOpenHelp}
+           className="w-full bg-indigo-600 p-5 rounded-3xl shadow-lg shadow-indigo-100 flex items-center justify-between hover:bg-indigo-700 active:scale-[0.98] group transition-all"
+        >
+          <div className="flex items-center gap-4 text-white">
+             <div className="bg-white/20 p-3 rounded-xl">
+               <FileText size={20} />
+             </div>
+             <div className="text-left">
+               <p className="font-bold leading-tight">Ayuda y FAQ</p>
+               <p className="text-[10px] text-white/60 uppercase font-bold tracking-wider">Tutoriales y Preguntas</p>
+             </div>
+          </div>
+        </button>
+      </div>
+
       {/* Data Management */}
       <div className="space-y-3">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Datos</p>
         
         <button 
           onClick={onExportExcel}
-          className="w-full bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-emerald-200 group transition-all"
+          className="w-full bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-emerald-200 active:scale-[0.98] group transition-all"
         >
           <div className="flex items-center gap-4">
              <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -179,7 +227,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
 
         <button 
           onClick={onClearData}
-          className="w-full bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-red-200 group transition-all"
+          className="w-full bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-red-200 active:scale-[0.98] group transition-all"
         >
           <div className="flex items-center gap-4">
              <div className="bg-red-50 text-red-500 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -196,24 +244,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userName, entries, s
       {/* Privacy Policy */}
       <div className="bg-gray-50 rounded-[2rem] p-6 border border-gray-100">
          <div className="flex items-center gap-2 mb-4">
-           <Shield size={20} className="text-emerald-500" />
-           <h3 className="font-bold text-gray-900">Política de Privacidad</h3>
+           <Shield size={20} className="text-indigo-500" />
+           <h3 className="font-bold text-gray-900">Datos y Privacidad</h3>
          </div>
-         <div className="text-sm text-gray-500 space-y-3 leading-relaxed">
+         <div className="text-xs text-gray-500 space-y-3 leading-relaxed">
            <p>
-             <strong>1. Almacenamiento Local:</strong> Mi Extra es una aplicación "Offline-First". Todos tus datos (horas, tarifas, notas) se guardan exclusivamente en la memoria interna de tu dispositivo (LocalStorage).
+             <strong>Local Storage:</strong> Todos tus datos se guardan exclusivamente en tu móvil. No hay servidores externos.
            </p>
            <p>
-             <strong>2. Sin Servidores:</strong> No enviamos tu información a ninguna nube ni base de datos externa. Tú tienes el control total.
-           </p>
-           <p>
-             <strong>3. Exportación:</strong> Puedes descargar una copia de seguridad en CSV en cualquier momento desde el botón de arriba.
+             <strong>Offline First:</strong> La app funciona sin internet. Las actualizaciones se descargan automáticamente si hay conexión disponible.
            </p>
          </div>
       </div>
 
       <div className="text-center pt-4 opacity-50">
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Mi Extra App v1.2</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Mi Extra App v1.3</p>
         <p className="text-xs">By JaviDev - 2026 - All rights reserved</p>
       </div>
     </div>

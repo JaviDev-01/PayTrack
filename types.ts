@@ -36,4 +36,5 @@ export interface AppSettings {
   rateWeekday: number;
   rateSaturday: number;
   rateHoliday: number;
+  taxPercentage: number; // New field for IRPF
 }
