@@ -134,13 +134,21 @@ const App: React.FC = () => {
   }, [userName, storageKey, settingsKey]);
 
   useEffect(() => {
+    // CRITICAL: Notify Capacitor Updater that the app is ready.
+    // This enables the automatic rollback mechanism if the app fails to load.
+    CapacitorUpdater.notifyAppReady();
+
     // Check for updates on mount
     const checkUpdates = async () => {
-      const update = await OTA.checkForUpdate();
-      if (update) {
-        setNewVersion(update.version);
-        setVersionInfo(update);
-        setUpdateStatus("available");
+      try {
+        const update = await OTA.checkForUpdate();
+        if (update) {
+          setNewVersion(update.version);
+          setVersionInfo(update);
+          setUpdateStatus("available");
+        }
+      } catch (err) {
+        console.error("OTA update check failed", err);
       }
     };
 
@@ -175,10 +183,16 @@ const App: React.FC = () => {
 
   const handleInstallUpdate = async () => {
     setUpdateStatus("restarting");
-    // Aesthetic delay for "Restarting" message reading before app exit
-    setTimeout(async () => {
-      await OTA.installUpdate(versionInfo);
-    }, 1500);
+    try {
+      // Small Delay for reading the "Restarting" message
+      setTimeout(async () => {
+        await OTA.installUpdate(versionInfo);
+      }, 1000);
+    } catch (e) {
+      console.error("Installation failed", e);
+      setUpdateStatus("ready");
+      alert("Error al instalar. Inténtalo de nuevo.");
+    }
   };
 
   useEffect(() => {

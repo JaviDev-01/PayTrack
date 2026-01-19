@@ -34,23 +34,22 @@ export const OTA = {
       const remoteConfig = await res.json();
       const remoteVersion = remoteConfig.version;
 
-      console.log(`Current: ${current.version}, Remote: ${remoteVersion}`);
+      console.log(`[OTA] Current: ${current.version}, Remote: ${remoteVersion}`);
 
       if (isNewerVersion(remoteVersion, current.version)) {
         return {
           version: remoteVersion,
-          // Construct the download URL for the GitHub Release asset
           downloadUrl: `https://github.com/JaviDev-01/PayTrack/releases/download/v${remoteVersion}/dist.zip`,
         };
       }
     } catch (error) {
-      console.error("Error checking for updates:", error);
+      console.error("[OTA] Error checking for updates:", error);
     }
     return null;
   },
 
   async downloadUpdate(versionInfo: VersionInfo) {
-    // Notify Capacitor Updater to download the bundle
+    console.log(`[OTA] Starting download: v${versionInfo.version}`);
     return CapacitorUpdater.download({
       version: versionInfo.version,
       url: versionInfo.downloadUrl,
@@ -59,17 +58,21 @@ export const OTA = {
 
   async installUpdate(versionInfo: VersionInfo) {
     try {
-      // Set the update as ready to be used on next app launch
+      console.log(`[OTA] Installing version: ${versionInfo.version}`);
+      
+      // 1. Set the new version
       await CapacitorUpdater.set({ id: versionInfo.version });
       
-      // Force app exit to "restart" and apply the new bundle
-      await App.exitApp();
+      console.log(`[OTA] Version set. Reloading app...`);
+
+      // 2. Reload the app immediately to apply changes
+      // This is more reliable than exitApp for OTA
+      await CapacitorUpdater.reload();
       
     } catch (error) {
-      // Ignore JS bridge errors during reload/restart
-      console.log(
-        "Update installation triggered (ignoring bridge error during reload)"
-      );
+      console.error("[OTA] Installation failed:", error);
+      // In case of error, we try a native reload as backup
+      window.location.reload();
     }
   },
 };
