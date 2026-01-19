@@ -251,12 +251,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
          </div>
          <div className="text-xs text-gray-500 space-y-3 leading-relaxed">
            <p>
-             <strong>Local Storage:</strong> Todos tus datos se guardan exclusivamente en tu móvil. No hay servidores externos. Esto nos facilita el trabajo como al propio usuario como a mí al no tener que gestionar los datos 
+             <strong>Almacenamiento de la app:</strong> Todos tus datos se guardan exclusivamente en tu móvil. No hay servidores externos. Esto nos facilita el trabajo como al propio usuario como a mí al no tener que gestionar los datos 
              y al poder dar al usuario la tranquilidad de que sus datos están seguros en su dispositivo. Por ello recordamos en última estancía que los datos guardados en la app es responsabilidad del propio usuario, nosotros NO GUARDAMOS,
              NI ALMACENAMOS, ningún dato sensible o personal del usuario.
            </p>
            <p>
-             <strong>Offline First:</strong> La app funciona sin internet en el caso de no querer recibir actualizaciones. Sin embargo y por causas evidentes necesitas tener mínima conexión a internet para recibir las actualizaciones de la app.
+             <strong>Actualizaciones y sincronización:</strong> La app funciona sin internet en el caso de no querer recibir actualizaciones. Sin embargo y por causas evidentes necesitas tener mínima conexión a internet para recibir las actualizaciones de la app.
            </p>
          </div>
       </div>
