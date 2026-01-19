@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface HelpModalProps {
   isOpen: boolean;
   onClose: () => void;
+  appVersion: string;
 }
 
 const FAQItem = ({
@@ -67,7 +68,8 @@ const FAQItem = ({
   );
 };
 
-export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
+
+export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, appVersion }) => {
   if (!isOpen) return null;
 
   return (
@@ -139,7 +141,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
           <div className="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center">
             <p className="text-xs text-gray-400 mb-1">Versión de la App</p>
-            <p className="text-sm font-bold text-gray-900">v1.6.3</p>
+            <p className="text-sm font-bold text-gray-900">v{appVersion}</p>
           </div>
         </div>
       </motion.div>

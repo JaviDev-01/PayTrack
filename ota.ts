@@ -83,4 +83,14 @@ export const OTA = {
       window.location.reload();
     }
   },
+
+  async getCurrentVersion(): Promise<string> {
+    try {
+      const latest = await CapacitorUpdater.getLatest();
+      return latest.version || (await App.getInfo()).version;
+    } catch (e) {
+      console.warn("[OTA] Error fetching version, fallback to generic", e);
+      return (await App.getInfo()).version;
+    }
+  },
 };

@@ -11,6 +11,7 @@ interface SettingsViewProps {
   onClearData: () => void;
   onExportExcel: () => void;
   onOpenHelp: () => void;
+  appVersion: string;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ 
@@ -21,7 +22,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onLogout, 
   onClearData, 
   onExportExcel,
-  onOpenHelp 
+  onOpenHelp,
+  appVersion
 }) => {
   return (
     <div className="space-y-6 animate-fade-in pb-24">
@@ -260,7 +262,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       <div className="text-center pt-4 opacity-50">
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Version Realease v1.6.3</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Version Realease v{appVersion}</p>
         <p className="text-xs">By JaviDev - 2026 - All rights reserved</p>
         <p className="text-xs">Diseñada por Javi, con mucho cariño y esfuerzo</p>
       </div>

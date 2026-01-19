@@ -74,6 +74,7 @@ const App: React.FC = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [newVersion, setNewVersion] = useState<string | null>(null);
   const [versionInfo, setVersionInfo] = useState<any>(null); // To store the full version object from OTA check
+  const [appVersion, setAppVersion] = useState<string>("Detectando...");
 
   // Settings State
   const defaultSettings: AppSettings = {
@@ -141,6 +142,10 @@ const App: React.FC = () => {
     // Check for updates on mount
     const checkUpdates = async () => {
       try {
+        // Fetch current internal version for UI
+        const currentV = await OTA.getCurrentVersion();
+        setAppVersion(currentV);
+
         const update = await OTA.checkForUpdate();
         if (update) {
           setNewVersion(update.version);
@@ -160,6 +165,10 @@ const App: React.FC = () => {
       (info: any) => {
         setUpdateStatus("downloading");
         setDownloadProgress(info.percent);
+        // ANTI-STUCK: If percentage hits 100, force ready immediately to avoid UI freeze
+        if (info.percent === 100) {
+            setUpdateStatus("ready");
+        }
       },
     );
 
@@ -943,6 +952,7 @@ const App: React.FC = () => {
                 onClearData={handleClearData}
                 onExportExcel={() => exportToExcel(entries, userName)}
                 onOpenHelp={() => setShowHelp(true)}
+                appVersion={appVersion}
               />
             </motion.div>
           )}
@@ -950,7 +960,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Help Modal */}
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} appVersion={appVersion} />
 
       {/* RESTORED BOTTOM NAVIGATION (FIXED BAR) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-stretch pb-safe z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
