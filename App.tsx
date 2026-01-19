@@ -627,14 +627,14 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="px-5 py-4 flex-grow overflow-y-auto no-scrollbar pb-32 relative">
-        <AnimatePresence mode="popLayout" initial={false}>
+        <AnimatePresence mode="wait">
           {view === "add" && (
             <motion.div
               key="add"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="space-y-6"
             >
               {/* MONTHLY Summary Card */}
@@ -708,10 +708,10 @@ const App: React.FC = () => {
           {view === "history" && (
             <motion.div
               key="history"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
               <h2 className="text-xl font-bold text-gray-900 mb-4 px-1">
                 Tus Registros
@@ -728,10 +728,10 @@ const App: React.FC = () => {
           {view === "stats" && (
             <motion.div
               key="stats"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="space-y-6 pb-4"
             >
               {/* Month Selector for Stats */}
@@ -929,10 +929,10 @@ const App: React.FC = () => {
           {view === "settings" && (
             <motion.div
               key="settings"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
               <SettingsView
                 userName={userName}
@@ -954,7 +954,8 @@ const App: React.FC = () => {
 
       {/* RESTORED BOTTOM NAVIGATION (FIXED BAR) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-stretch pb-safe z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => setView("add")}
           className={`flex-1 py-3 pt-4 flex flex-col items-center justify-center gap-1.5 transition-all group ${
             view === "add"
@@ -972,9 +973,10 @@ const App: React.FC = () => {
           >
             REGISTRAR
           </span>
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => setView("history")}
           className={`flex-1 py-3 pt-4 flex flex-col items-center justify-center gap-1.5 transition-all group ${
             view === "history"
@@ -992,9 +994,10 @@ const App: React.FC = () => {
           >
             HISTORIAL
           </span>
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => setView("stats")}
           className={`flex-1 py-3 pt-4 flex flex-col items-center justify-center gap-1.5 transition-all group ${
             view === "stats"
@@ -1012,9 +1015,10 @@ const App: React.FC = () => {
           >
             DATOS
           </span>
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => setView("settings")}
           className={`flex-1 py-3 pt-4 flex flex-col items-center justify-center gap-1.5 transition-all group ${
             view === "settings"
@@ -1032,7 +1036,7 @@ const App: React.FC = () => {
           >
             AJUSTES
           </span>
-        </button>
+        </motion.button>
       </nav>
     </div>
   );

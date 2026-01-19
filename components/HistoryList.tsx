@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { WorkEntry } from '../types';
 import { formatCurrency, exportToExcel, formatDuration } from '../utils';
 import { Trash2, Download, FileText, Pencil, Filter, Clock, FileSpreadsheet } from 'lucide-react';
@@ -54,9 +55,13 @@ export const HistoryList: React.FC<HistoryListProps> = ({ entries, onDelete, onE
         </div>
       ) : (
         <div className="space-y-3">
-          {sortedEntries.map((entry) => (
-            <div 
-              key={entry.id} 
+          {sortedEntries.map((entry, index) => (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              whileTap={{ scale: 0.98 }}
               className="bg-white rounded-3xl p-5 border border-gray-50 shadow-sm hover:shadow-lg hover:border-gray-100 transition-all duration-300 group"
             >
               <div className="flex items-center justify-between">
@@ -95,7 +100,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({ entries, onDelete, onE
                 </div>
 
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
