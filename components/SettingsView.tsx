@@ -219,7 +219,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                <FileSpreadsheet size={20} />
              </div>
              <div className="text-left">
-               <p className="font-bold text-gray-900">Exportar a Excel</p>
+               <p className="font-bold text-gray-900">Exportar a Excel (FUNCIONALIDAD EN BETA)</p>
                <p className="text-xs text-gray-400">Descarga tu historial ordenado</p>
              </div>
           </div>
@@ -249,17 +249,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
          </div>
          <div className="text-xs text-gray-500 space-y-3 leading-relaxed">
            <p>
-             <strong>Local Storage:</strong> Todos tus datos se guardan exclusivamente en tu móvil. No hay servidores externos.
+             <strong>Local Storage:</strong> Todos tus datos se guardan exclusivamente en tu móvil. No hay servidores externos. Esto nos facilita el trabajo como al propio usuario como a mí al no tener que gestionar los datos 
+             y al poder dar al usuario la tranquilidad de que sus datos están seguros en su dispositivo. Por ello recordamos en última estancía que los datos guardados en la app es responsabilidad del propio usuario, nosotros NO GUARDAMOS,
+             NI ALMACENAMOS, ningún dato sensible o personal del usuario.
            </p>
            <p>
-             <strong>Offline First:</strong> La app funciona sin internet. Las actualizaciones se descargan automáticamente si hay conexión disponible.
+             <strong>Offline First:</strong> La app funciona sin internet en el caso de no querer recibir actualizaciones. Sin embargo y por causas evidentes necesitas tener mínima conexión a internet para recibir las actualizaciones de la app.
            </p>
          </div>
       </div>
 
       <div className="text-center pt-4 opacity-50">
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Mi Extra App v1.3</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Version Realease v1.6</p>
         <p className="text-xs">By JaviDev - 2026 - All rights reserved</p>
+        <p className="text-xs">Diseñada por Javi, con mucho cariño y esfuerzo</p>
       </div>
     </div>
   );

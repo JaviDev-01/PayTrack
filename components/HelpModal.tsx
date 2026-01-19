@@ -120,23 +120,26 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <FAQItem
               icon={CheckCircle2}
               question="¿Cómo marco un festivo?"
-              answer="Al añadir o editar una hora, activa el interruptor 'Festivo' (icono de destellos). La App aplicará automáticamente tu tarifa especial para festivos."
+              answer="Al añadir o editar una hora, activa el interruptor 'Festivo' (icono de destellos). La App aplicará automáticamente tu tarifa especial para festivos. Mencionar que los festivos no se aplican automaticamente ya que la app (por ahora) no tiene aceso a 
+              los diferentes calendarios de festivos de las comunidades autonomas ni a los festivos nacionales. Por lo que deberas marcar los festivos manualmente."
             />
             <FAQItem
               icon={DollarSign}
               question="¿Qué es el IRPF?"
-              answer="Es el Impuesto sobre la Renta. Puedes configurar tu porcentaje de retención en Ajustes para ver cuánto cobrarás realmente (Neto) después de impuestos."
+              answer="Es el Impuesto sobre la Renta español. Puedes configurar tu porcentaje de retención en Ajustes para ver cuánto cobrarás realmente (Neto) después de impuestos. Recuerda que este cálculo es orientativo y no sustituye el asesoramiento de un profesional.
+              para saber con exactitud cuanto debes retener en tu nómina debes consultar con un asesor fiscal o con la Agencia Tributaria."
             />
             <FAQItem
               icon={FileSpreadsheet}
               question="¿Cómo exportar mis datos?"
-              answer="Ve a la pestaña de Ajustes y pulsa el botón verde de Excel. Se generará un archivo .xlsx que puedes compartir por WhatsApp, Email o guardar en tu móvil."
+              answer="Ve a la pestaña de Ajustes y pulsa el botón verde de Excel. Se generará un archivo .xlsx que puedes compartir por WhatsApp, Email o guardar en tu móvil. Recordamos que la funcionalidad de exportar a Excel está en fase beta y puede contener errores. Además 
+              al tratarse de una versión beta la prueba realizada ha sido comprobada en ordenadores por lo que no se puede garantizar su correcto funcionamiento en todos los dispositivos móviles."
             />
           </div>
 
           <div className="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center">
             <p className="text-xs text-gray-400 mb-1">Versión de la App</p>
-            <p className="text-sm font-bold text-gray-900">v1.5.0</p>
+            <p className="text-sm font-bold text-gray-900">v1.6.0</p>
           </div>
         </div>
       </motion.div>
