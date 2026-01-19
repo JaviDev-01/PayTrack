@@ -626,15 +626,15 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="px-5 py-4 flex-grow overflow-y-auto no-scrollbar pb-32">
-        <AnimatePresence mode="wait">
+      <main className="px-5 py-4 flex-grow overflow-y-auto no-scrollbar pb-32 relative">
+        <AnimatePresence mode="popLayout" initial={false}>
           {view === "add" && (
             <motion.div
               key="add"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="space-y-6"
             >
               {/* MONTHLY Summary Card */}
@@ -708,10 +708,10 @@ const App: React.FC = () => {
           {view === "history" && (
             <motion.div
               key="history"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <h2 className="text-xl font-bold text-gray-900 mb-4 px-1">
                 Tus Registros
@@ -728,10 +728,10 @@ const App: React.FC = () => {
           {view === "stats" && (
             <motion.div
               key="stats"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="space-y-6 pb-4"
             >
               {/* Month Selector for Stats */}
@@ -929,10 +929,10 @@ const App: React.FC = () => {
           {view === "settings" && (
             <motion.div
               key="settings"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <SettingsView
                 userName={userName}

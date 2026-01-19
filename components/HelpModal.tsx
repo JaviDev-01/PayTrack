@@ -139,7 +139,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
           <div className="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center">
             <p className="text-xs text-gray-400 mb-1">Versión de la App</p>
-            <p className="text-sm font-bold text-gray-900">v1.6.0</p>
+            <p className="text-sm font-bold text-gray-900">v1.6.2</p>
           </div>
         </div>
       </motion.div>

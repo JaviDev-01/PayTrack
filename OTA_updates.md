@@ -1,72 +1,35 @@
-# Sistema OTA Profesional para Capacitor
+# Sistema de Actualización OTA Profesional (v2.0)
 
-Este documento detalla la lógica implementada en **PayTrack** para lograr actualizaciones Over-The-Air (OTA) con un **99.9% de fiabilidad**, utilizando el plugin `@capgo/capacitor-updater`.
+Este documento detalla el funcionamiento del sistema Over-The-Air (OTA) de PayTrack, optimizado para una fiabilidad del 99.9% y una experiencia de usuario sin fricciones.
 
-## 1. Arquitectura de Fiabilidad (Rollback Automático)
+## Arquitectura y Lógica de Versiones
 
-La mayor causa de fallo en sistemas OTA es una actualización que se descarga bien pero rompe la app al arrancar (ej: error JS crítico).
-Para evitar esto, hemos implementado el mecanismo de **Confirmación de Inicio**:
+### 1. Detección Inteligente (`ota.ts`)
 
-- **Lógica**: Al arrancar, la app tiene un tiempo límite (30s por defecto) para llamar a `CapacitorUpdater.notifyAppReady()`.
-- **Protección**: Si la app falla o no llama a esa función a tiempo, el sistema asume que la actualización es defectuosa y **revierte automáticamente** a la versión anterior funcional.
+A diferencia de las comprobaciones estándar, PayTrack utiliza `CapacitorUpdater.getLatest()`.
 
-```typescript
-// En App.tsx (al inicio del componente)
-useEffect(() => {
-  CapacitorUpdater.notifyAppReady();
-}, []);
-```
+- **Por qué**: Las apps Capacitor tienen dos versiones: la del "binario" (App Store/Play Store) y la del "bundle" (OTA). Comparar solo contra el binario hace que la notificación de actualización persista aunque ya se haya descargado la OTA.
+- **Solución**: Consultamos el ID del bundle activo. Si coincide con la versión remota, la app sabe que está al día y silencia los avisos.
 
-## 2. Proceso de Actualización paso a paso
+### 2. Ciclo de Vida de una Actualización
 
-### Paso A: Comprobación (Check)
+1.  **Check**: Se descarga el `package.json` remoto con un parámetro `?t=` para evitar la caché del navegador.
+2.  **Download**: Si la versión remota es superior (comprobación semántica), se descarga el `.zip` en segundo plano.
+3.  **Ready**: Se avisa al usuario. Al pulsar "Instalar", la app registra el nuevo bundle.
+4.  **Reload**: Se ejecuta `CapacitorUpdater.reload()`. Esto refresca el motor WebView con el nuevo código instantáneamente sin cerrar la aplicación de cara al sistema operativo.
 
-Se consulta un archivo JSON (habitualmente el `package.json` en main o un servidor dedicado) comparando la versión local con la remota.
+### 3. Sistema de Auto-Reversión (Fail-Safe)
 
-### Paso B: Descarga (Download)
+En `App.tsx`, usamos `CapacitorUpdater.notifyAppReady()`.
 
-Se descarga el `.zip` del bundle web en segundo plano. Nunca bloqueamos al usuario aquí.
+- Si una actualización está corrupta o hace que la app se cuelgue al inicio, el plugin detectará que no se ha llamado a `notifyAppReady` y **revertirá automáticamente** a la versión anterior estable en el próximo inicio.
 
-### Paso C: Instalación y Reinicio (Install & Reload)
+## Versiones Internas vs UI
 
-Usamos `CapacitorUpdater.reload()` en lugar de simplemente cerrar la app. Esto asegura que el nuevo código se cargue de inmediato.
+- **Interna (Lógica)**: Se usa la versión semántica completa (ej: `1.6.1`). Es la que manda en las comparaciones de `ota.ts`.
+- **Externa (UI)**: Para el usuario, mostramos una versión "Market" más limpia (ej: `v1.6`) en el pie de página de Ajustes, evitando confundir con sub-parches técnicos.
 
----
+## Consejos de Mantenimiento
 
-## 3. Guía de Implementación para nuevos proyectos
-
-### Requisitos previos
-
-```bash
-npm install @capgo/capacitor-updater @capacitor/app @capacitor/filesystem
-npx cap sync
-```
-
-### Tutorial de Configuración
-
-#### 1. Crear el servicio `ota.ts`
-
-Define una interfaz para la versión y los métodos `checkForUpdate`, `downloadUpdate` e `installUpdate`. Asegúrate de usar `reload()` para aplicar los cambios.
-
-#### 2. Inicializar en `App.tsx`
-
-Es obligatorio llamar a `notifyAppReady` en el primer `useEffect`. Esto activa el seguro de vida de tu aplicación.
-
-#### 3. Automatización (GitHub Actions)
-
-Para que el sistema sea profesional, usa una Action que:
-
-1. Compile tu proyecto (`npm run build`).
-2. Comprima la carpeta `dist` o `build` en un `dist.zip`.
-3. Cree una release en GitHub con el tag `vX.X.X`.
-
-#### 4. Ejemplo de comparación semántica
-
-No uses strings simples, separa por puntos (`1.2.0`) y compara cada bloque para evitar que una versión `1.10.0` se considere menor que `1.2.0`.
-
----
-
-## 4. Consejos Pro
-
-- **Busting Cache**: Añade un timestamp a la URL del fetch para evitar que los navegadores/proxies sirvan un `package.json` antiguo.
-- **Micro-Delays**: Al dar a "Instalar", añade un pequeño retraso de 500ms-1s. Esto permite que la UI muestre un mensaje de "Instalando..." antes de que la app se refresque, dando una sensación de proceso controlado al usuario.
+- **Versión en package.json**: Siempre que subas una nueva versión a la rama `main`, asegúrate de incrementar el campo `version`.
+- **Releases de GitHub**: El zip debe estar en el tag correspondiente para que la descarga funcione.

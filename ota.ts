@@ -26,7 +26,14 @@ function isNewerVersion(vA: string, vB: string): boolean {
 export const OTA = {
   async checkForUpdate(): Promise<VersionInfo | null> {
     try {
-      const current = await App.getInfo();
+      // 1. Get the CURRENT active version (the one currently running)
+      // This is more accurate than App.getInfo() for OTA-updated apps
+      const latest = await CapacitorUpdater.getLatest();
+      const currentVersion = latest.version || (await App.getInfo()).version;
+      
+      console.log(`[OTA] Detectando versión activa: ${currentVersion}`);
+
+      // 2. Fetch remote version
       // Cache busting with timestamp
       const res = await fetch(`${REPO_URL}?t=${Date.now()}`);
       if (!res.ok) return null;
@@ -34,13 +41,15 @@ export const OTA = {
       const remoteConfig = await res.json();
       const remoteVersion = remoteConfig.version;
 
-      console.log(`[OTA] Current: ${current.version}, Remote: ${remoteVersion}`);
+      console.log(`[OTA] Remota: ${remoteVersion}`);
 
-      if (isNewerVersion(remoteVersion, current.version)) {
+      if (isNewerVersion(remoteVersion, currentVersion)) {
         return {
           version: remoteVersion,
           downloadUrl: `https://github.com/JaviDev-01/PayTrack/releases/download/v${remoteVersion}/dist.zip`,
         };
+      } else {
+        console.log(`[OTA] Aplicación ya actualizada a la versión más reciente.`);
       }
     } catch (error) {
       console.error("[OTA] Error checking for updates:", error);
@@ -49,7 +58,7 @@ export const OTA = {
   },
 
   async downloadUpdate(versionInfo: VersionInfo) {
-    console.log(`[OTA] Starting download: v${versionInfo.version}`);
+    console.log(`[OTA] Iniciando descarga: v${versionInfo.version}`);
     return CapacitorUpdater.download({
       version: versionInfo.version,
       url: versionInfo.downloadUrl,
@@ -58,20 +67,19 @@ export const OTA = {
 
   async installUpdate(versionInfo: VersionInfo) {
     try {
-      console.log(`[OTA] Installing version: ${versionInfo.version}`);
+      console.log(`[OTA] Instalando versión: ${versionInfo.version}`);
       
       // 1. Set the new version
       await CapacitorUpdater.set({ id: versionInfo.version });
       
-      console.log(`[OTA] Version set. Reloading app...`);
+      console.log(`[OTA] Versión establecida. Reiniciando app...`);
 
       // 2. Reload the app immediately to apply changes
-      // This is more reliable than exitApp for OTA
       await CapacitorUpdater.reload();
       
     } catch (error) {
-      console.error("[OTA] Installation failed:", error);
-      // In case of error, we try a native reload as backup
+      console.error("[OTA] Fallo en la instalación:", error);
+      // Fallback a recarga de ventana si falla el plugin
       window.location.reload();
     }
   },

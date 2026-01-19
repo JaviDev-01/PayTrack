@@ -260,7 +260,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       <div className="text-center pt-4 opacity-50">
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Version Realease v1.6</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Version Realease v1.6.2</p>
         <p className="text-xs">By JaviDev - 2026 - All rights reserved</p>
         <p className="text-xs">Diseñada por Javi, con mucho cariño y esfuerzo</p>
       </div>
