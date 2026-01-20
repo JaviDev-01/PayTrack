@@ -75,20 +75,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         {settings.homeViewMode === 'currentMonth' && (
              <div className='animate-fade-in'>
-                <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Día de inicio del ciclo</label>
-                <div className='flex items-center gap-3'>
-                    <input 
-                        type='number' 
-                        min="1"
-                        max="31"
-                        className='w-20 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 transition-colors'
-                        value={settings.billingCycleStartDay || 1}
-                        onChange={(e) => onUpdateSettings({ ...settings, billingCycleStartDay: parseInt(e.target.value) || 1 })}
-                    />
-                    <p className='text-[10px] text-gray-400 font-medium'>
-                        Ej: Si pones 20, el ciclo va del 20 al 19 del mes siguiente.
-                    </p>
+                <div className='grid grid-cols-2 gap-3 mb-2'>
+                    <div>
+                        <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Desde el día</label>
+                        <input 
+                            type='number' 
+                            min="1"
+                            max="31"
+                            className='w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 transition-colors'
+                            value={settings.billingCycleStartDay || 1}
+                            onChange={(e) => onUpdateSettings({ ...settings, billingCycleStartDay: parseInt(e.target.value) || 1 })}
+                        />
+                    </div>
+                    <div>
+                        <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block px-1'>Hasta el día</label>
+                        <input 
+                            type='number' 
+                            disabled
+                            className='w-full bg-gray-100 border border-gray-200/50 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-500 cursor-not-allowed'
+                            value={settings.billingCycleStartDay || 1}
+                        />
+                    </div>
                 </div>
+                <p className='text-[10px] text-gray-400 font-medium px-1'>
+                    El ciclo empieza el día {settings.billingCycleStartDay || 1} y termina cuando llega de nuevo el día {settings.billingCycleStartDay || 1} del mes siguiente.
+                </p>
              </div>
         )}
 

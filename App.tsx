@@ -659,9 +659,12 @@ const App: React.FC = () => {
                               getBillingCycleRange(
                                 settings.billingCycleStartDay || 1,
                               ).start,
-                              getBillingCycleRange(
-                                settings.billingCycleStartDay || 1,
-                              ).end,
+                              addDays(
+                                getBillingCycleRange(
+                                  settings.billingCycleStartDay || 1,
+                                ).end,
+                                1,
+                              ),
                             )}
                       </p>
                     </div>
@@ -765,7 +768,7 @@ const App: React.FC = () => {
                     <span className="text-[10px] font-bold text-gray-400">
                       {formatDateRange(
                         filteredStats.range.start,
-                        filteredStats.range.end,
+                        addDays(filteredStats.range.end, 1),
                       )}
                     </span>
                   </div>
