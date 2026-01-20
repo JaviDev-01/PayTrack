@@ -201,7 +201,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                <FileText size={20} />
              </div>
              <div className="text-left">
-               <p className="font-bold leading-tight">Ayuda y FAQ</p>
+               <p className="font-bold leading-tight">Ayuda y Preguntas</p>
                <p className="text-[10px] text-white/60 uppercase font-bold tracking-wider">Tutoriales y Preguntas</p>
              </div>
           </div>
