@@ -461,7 +461,7 @@ const App: React.FC = () => {
               </span>
             </h1>
             <p className="text-xl text-gray-400 font-medium">
-              Tu tiempo vale dinero.
+              Tu tiempo es oro para nosotros, por lo que queremos que sea lo más eficiente posible.
             </p>
           </div>
 
@@ -475,7 +475,7 @@ const App: React.FC = () => {
               <label
                 className={`block text-xs font-bold uppercase tracking-widest mb-4 transition-all duration-300 ${tempName ? "text-indigo-600 translate-y-0 opacity-100" : "text-gray-300 translate-y-4 opacity-0"}`}
               >
-                ¿Cómo te llamas?
+                ¿Cómo quieres que te llamemos?
               </label>
               <input
                 type="text"
