@@ -32,4 +32,10 @@ En `App.tsx`, usamos `CapacitorUpdater.notifyAppReady()`.
 ## Consejos de Mantenimiento
 
 - **Versión en package.json**: Siempre que subas una nueva versión a la rama `main`, asegúrate de incrementar el campo `version`.
-- **Releases de GitHub**: El zip debe estar en el tag correspondiente para que la descarga funcione.
+- **Releases de GitHub**:
+  - Crea un nuevo Release con el tag `v1.6.4` (coincidiendo con package.json).
+  - **IMPORTANTE: El archivo `dist.zip`**:
+    1. Entra en tu carpeta `dist/` (o `build/`).
+    2. Selecciona **todos los archivos** dentro (index.html, assets, etc.).
+    3. Comprímelos en `dist.zip`.
+    4. **NO** comprimas la carpeta `dist` desde fuera. El `index.html` debe estar en la raíz del zip.

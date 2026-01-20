@@ -165,10 +165,6 @@ const App: React.FC = () => {
       (info: any) => {
         setUpdateStatus("downloading");
         setDownloadProgress(info.percent);
-        // ANTI-STUCK: If percentage hits 100, force ready immediately to avoid UI freeze
-        if (info.percent === 100) {
-            setUpdateStatus("ready");
-        }
       },
     );
 
@@ -194,9 +190,8 @@ const App: React.FC = () => {
     setUpdateStatus("restarting");
     try {
       // Small Delay for reading the "Restarting" message
-      setTimeout(async () => {
-        await OTA.installUpdate(versionInfo);
-      }, 1000);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await OTA.installUpdate(versionInfo);
     } catch (e) {
       console.error("Installation failed", e);
       setUpdateStatus("ready");
@@ -768,7 +763,10 @@ const App: React.FC = () => {
                       {getMonthName(selectedDate)}
                     </span>
                     <span className="text-[10px] font-bold text-gray-400">
-                      {formatDateRange(filteredStats.range.start, filteredStats.range.end)}
+                      {formatDateRange(
+                        filteredStats.range.start,
+                        filteredStats.range.end,
+                      )}
                     </span>
                   </div>
                   <button
@@ -960,7 +958,11 @@ const App: React.FC = () => {
       </main>
 
       {/* Help Modal */}
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} appVersion={appVersion} />
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        appVersion={appVersion}
+      />
 
       {/* RESTORED BOTTOM NAVIGATION (FIXED BAR) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-stretch pb-safe z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
