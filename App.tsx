@@ -39,6 +39,8 @@ import {
   Settings,
   TrendingUp,
   DollarSign,
+  Percent,
+  Target
 } from "lucide-react";
 
 import { CapacitorUpdater } from "@capgo/capacitor-updater";
@@ -152,13 +154,16 @@ const App: React.FC = () => {
           setNewVersion(update.version);
           setVersionInfo(update);
           
-          // Professional approach: download in background automatically
+          // Automatic approach: download and install immediately
           setUpdateStatus("downloading");
           try {
             await OTA.downloadUpdate(update);
-            setUpdateStatus("ready");
+            // Auto install after download
+            setUpdateStatus("restarting");
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            await OTA.installUpdate(update);
           } catch (dlErr) {
-            console.error("Background download failed", dlErr);
+            console.error("Auto background update failed", dlErr);
             setUpdateStatus("idle");
           }
         }
@@ -183,17 +188,17 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // handleInstallUpdate now handles the installation after background download
+  // handleInstallUpdate is no longer needed to be called manually, 
+  // but we can trigger it for manual fallbacks if needed.
   const handleInstallUpdate = async () => {
+    if (!versionInfo) return;
     setUpdateStatus("restarting");
     try {
-      // Small Delay for reading the "Restarting" message
       await new Promise(resolve => setTimeout(resolve, 1000));
       await OTA.installUpdate(versionInfo);
     } catch (e) {
       console.error("Installation failed", e);
-      setUpdateStatus("ready");
-      alert("Error al instalar. Inténtalo de nuevo.");
+      setUpdateStatus("idle");
     }
   };
 
@@ -448,63 +453,71 @@ const App: React.FC = () => {
           </div>
 
           {/* Text */}
-          <div
-            className="text-center mb-16 space-y-3 opacity-0 animate-slide-up"
-            style={{ animationFillMode: "forwards", animationDelay: "200ms" }}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-16 space-y-4"
           >
-            <h1 className="text-5xl font-black text-gray-900 tracking-tighter leading-tight">
-              Hola, <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-pink-500">
-                Mi Extra
+            <div className="inline-block bg-gray-900 text-white px-4 py-1.5 rounded-full mb-4 transform rotate-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em]">PayTrack Pro v1.6.16</span>
+            </div>
+            <h1 className="text-6xl font-black text-gray-900 tracking-tighter leading-[0.9]">
+              Bienvenido, <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500">
+                Guerrero.
               </span>
             </h1>
-            <p className="text-xl text-gray-400 font-medium">
-              Tu tiempo es oro para nosotros, por lo que queremos que sea lo más eficiente posible.
+            <p className="text-lg text-gray-400 font-bold leading-tight px-4 mt-4">
+              Controla cada minuto de tu esfuerzo y conviértelo en resultados tangibles.
             </p>
-          </div>
+          </motion.div>
 
-          {/* Form */}
-          <form
+          <motion.form
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
             onSubmit={handleLogin}
-            className="w-full space-y-12 opacity-0 animate-slide-up"
-            style={{ animationFillMode: "forwards", animationDelay: "400ms" }}
+            className="w-full space-y-12"
           >
-            <div className="relative group text-center">
+            <div className="relative group text-center px-4">
               <label
-                className={`block text-xs font-bold uppercase tracking-widest mb-4 transition-all duration-300 ${tempName ? "text-indigo-600 translate-y-0 opacity-100" : "text-gray-300 translate-y-4 opacity-0"}`}
+                className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-6 transition-all duration-500 ${tempName ? "text-indigo-600 translate-y-0 opacity-100" : "text-gray-300 translate-y-4 opacity-50"}`}
               >
-                ¿Cómo quieres que te llamemos?
+                ¿CÓMO DEBEMOS LLAMARTE?
               </label>
               <input
                 type="text"
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
-                placeholder="Tu Nombre..."
+                placeholder="Escribe tu alias..."
                 autoFocus
-                className="w-full bg-transparent text-center text-5xl font-black text-gray-900 placeholder-gray-200 outline-none caret-indigo-500 transition-all pb-4 border-b-2 border-transparent focus:border-gray-100"
+                className="w-full bg-transparent text-center text-4xl font-black text-gray-900 placeholder-gray-100 outline-none caret-indigo-500 transition-all pb-6 border-b-4 border-gray-50 focus:border-indigo-600"
               />
             </div>
 
-            <div className="h-20 flex items-end justify-center">
-              <button
+            <div className="flex items-center justify-center pt-8">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={!tempName.trim()}
                 className={`
-                    group relative w-full bg-gray-900 text-white font-bold text-xl py-6 rounded-[2.5rem] shadow-2xl shadow-gray-200 flex items-center justify-center gap-3 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1)
+                    relative w-full max-w-xs bg-gray-900 text-white font-black text-xl py-6 rounded-[2rem] shadow-2xl shadow-gray-300 flex items-center justify-center gap-4 transition-all duration-500 
                     ${
                       tempName.trim()
-                        ? "opacity-100 translate-y-0 hover:scale-[1.02] active:scale-[0.98]"
-                        : "opacity-0 translate-y-10 pointer-events-none"
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-30 translate-y-4 pointer-events-none"
                     }
                   `}
               >
-                <span>Comenzar</span>
-                <div className="bg-white/20 p-2 rounded-full group-hover:translate-x-1 transition-transform">
-                  <ArrowRight size={20} />
+                <span>ENTRAR</span>
+                <div className="bg-indigo-500 p-2 rounded-xl">
+                  <ArrowRight size={20} strokeWidth={3} />
                 </div>
-              </button>
+              </motion.button>
             </div>
-          </form>
+          </motion.form>
         </div>
 
         {/* Footer */}
@@ -600,22 +613,28 @@ const App: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className="px-6 pt-12 pb-2 flex-none">
+      <header className="px-6 pt-12 pb-4 flex-none">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gray-900 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-md">
+          <div className="flex items-center gap-4">
+            <motion.div 
+              whileHover={{ rotate: 10 }}
+              className="h-12 w-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-xl shadow-gray-200"
+            >
               {userName.charAt(0).toUpperCase()}
-            </div>
+            </motion.div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Hola,
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-0.5">
+                AGENT: {userName.toUpperCase()}
               </p>
-              <h1 className="text-xl font-black text-gray-900 tracking-tight">
-                {userName}
+              <h1 className="text-xl font-black text-gray-900 tracking-tighter leading-none">
+                Estado Actual
               </h1>
             </div>
           </div>
-          <div className="w-10"></div>
+          <div className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full flex items-center gap-2 border border-emerald-100">
+             <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
+             <span className="text-[10px] font-black uppercase tracking-widest">Live</span>
+          </div>
         </div>
       </header>
 
@@ -632,64 +651,65 @@ const App: React.FC = () => {
               className="space-y-6"
             >
               {/* MONTHLY Summary Card */}
-              <div className="bg-gray-900 rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200 text-white relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
+              <div className="bg-gray-900 rounded-[2.5rem] p-9 shadow-2xl shadow-gray-300 text-white relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/20 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-[60px] -ml-20 -mb-20"></div>
 
                 <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="bg-white/10 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
-                      <p className="text-xs font-bold uppercase tracking-wider text-white/80 flex items-center gap-2">
-                        <Calendar size={12} />
+                  <div className="flex justify-between items-start mb-10">
+                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 px-4 py-2 rounded-2xl">
+                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/90 flex items-center gap-2">
+                        <Calendar size={12} strokeWidth={3} />
                         {settings.homeViewMode === "custom"
                           ? settings.customStartDate && settings.customEndDate
-                            ? `${settings.customStartDate.substring(5)} - ${settings.customEndDate.substring(5)}`
+                            ? `${settings.customStartDate.split('-').slice(1).reverse().join('/')} - ${settings.customEndDate.split('-').slice(1).reverse().join('/')}`
                             : "Rango Personalizado"
                           : formatDateRange(
-                              getBillingCycleRange(
-                                settings.billingCycleStartDay || 1,
-                              ).start,
-                              getBillingCycleRange(
-                                settings.billingCycleStartDay || 1,
-                              ).end,
+                              getBillingCycleRange(settings.billingCycleStartDay || 1).start,
+                              getBillingCycleRange(settings.billingCycleStartDay || 1).end,
                             )}
                       </p>
                     </div>
+                    <div className="bg-indigo-500/20 p-2 rounded-xl border border-indigo-400/30">
+                      <Percent size={14} className="text-indigo-300" />
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <span className="text-5xl font-black tracking-tight">
-                      {
-                        formatCurrency(
-                          homeStats.totalEarned *
-                            (1 - (settings.taxPercentage || 0) / 100),
-                        ).split(",")[0]
-                      }
-                      <span className="text-2xl text-white/40">
-                        ,
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.25em]">Capital Acumulado</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-6xl font-black tracking-tighter">
                         {
                           formatCurrency(
-                            homeStats.totalEarned *
-                              (1 - (settings.taxPercentage || 0) / 100),
-                          ).split(",")[1]
+                            homeStats.totalEarned * (1 - (settings.taxPercentage || 0) / 100),
+                          ).split(",")[0]
                         }
                       </span>
-                    </span>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Clock size={14} className="text-white/40" />
-                      <p className="text-xs font-medium text-white/60">
-                        <span className="text-white font-bold">
-                          {formatDuration(homeStats.totalHours)}
-                        </span>{" "}
-                        {settings.homeViewMode === "custom"
-                          ? "en periodo"
-                          : "en este ciclo"}
-                        {(settings.taxPercentage || 0) > 0 && (
-                          <span className="text-emerald-400 font-bold ml-1.5">
-                            (Neto)
-                          </span>
-                        )}
-                      </p>
+                      <span className="text-3xl font-black text-white/40">
+                        .{
+                          formatCurrency(
+                            homeStats.totalEarned * (1 - (settings.taxPercentage || 0) / 100),
+                          ).split(",")[1].split(" ")[0]
+                        }
+                      </span>
+                      <span className="text-2xl font-black text-indigo-400 ml-1">€</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mt-6 pt-6 border-t border-white/5">
+                      <div className="flex flex-col">
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Horas Totales</p>
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={12} className="text-emerald-400" />
+                          <span className="text-sm font-black text-white">{formatDuration(homeStats.totalHours)}</span>
+                        </div>
+                      </div>
+                      <div className="h-8 w-px bg-white/5"></div>
+                      <div className="flex flex-col">
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Tipo Ciclo</p>
+                        <span className="text-sm font-black text-indigo-300 uppercase tracking-tighter">
+                          {settings.homeViewMode === "custom" ? "Personalizado" : "Mensual"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -769,69 +789,67 @@ const App: React.FC = () => {
               </div>
 
               {/* 1. Global Stats Card with Gross/Net */}
-              <div className="bg-gray-900 rounded-[2.5rem] p-8 shadow-2xl text-white relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-pink-500/10 rounded-full blur-3xl"></div>
+              <div className="bg-gray-900 rounded-[2.5rem] p-9 shadow-2xl text-white relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-pink-600/20 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-[60px] -ml-20 -mb-20"></div>
 
                 <div className="relative z-10">
-                  <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">
-                    Resumen del Periodo
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 mb-8">
+                    Análisis de Rendimiento
                   </p>
-                  <div className="flex justify-between items-end mb-6">
-                    <div>
-                      <span className="text-5xl font-black tracking-tighter">
-                        {
-                          formatCurrency(
-                            filteredStats.global.totalEarned *
-                              (1 - (settings.taxPercentage || 0) / 100),
-                          ).split(",")[0]
-                        }
-                        <span className="text-2xl text-white/40">
-                          ,
+                  
+                  <div className="flex justify-between items-end mb-10">
+                    <div className="flex flex-col gap-1">
+                       <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Balance Neto Total</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-5xl font-black tracking-tighter">
                           {
                             formatCurrency(
                               filteredStats.global.totalEarned *
                                 (1 - (settings.taxPercentage || 0) / 100),
-                            ).split(",")[1]
+                            ).split(",")[0]
                           }
                         </span>
-                      </span>
-                      {(settings.taxPercentage || 0) > 0 && (
-                        <p className="text-xs font-medium text-emerald-400 mt-1">
-                          Cálculo en Neto (-{settings.taxPercentage}%)
-                        </p>
-                      )}
+                        <span className="text-2xl font-black text-white/40">
+                          .{
+                            formatCurrency(
+                              filteredStats.global.totalEarned *
+                                (1 - (settings.taxPercentage || 0) / 100),
+                            ).split(",")[1].split(" ")[0]
+                          }
+                        </span>
+                        <span className="text-xl font-black text-indigo-400 ml-1">€</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-white mb-0.5">
-                        {formatDuration(filteredStats.global.totalHours)}
-                      </p>
-                      <p className="text-[10px] uppercase font-bold text-white/40 tracking-wider">
-                        Horas totales
-                      </p>
+
+                    <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/5 text-right">
+                       <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Bruto Total</p>
+                       <p className="text-lg font-black text-emerald-400/80">
+                         {formatCurrency(filteredStats.global.totalEarned)}
+                       </p>
                     </div>
                   </div>
 
-                  {(settings.taxPercentage || 0) > 0 && (
-                    <div className="pt-4 border-t border-white/5 flex justify-between">
-                      <div>
-                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                          Bruto
-                        </p>
-                        <p className="text-sm font-bold text-white/60">
-                          {formatCurrency(filteredStats.global.totalEarned)}
-                        </p>
+                  <div className="grid grid-cols-2 gap-4 mt-2 pt-8 border-t border-white/5">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/5 p-2.5 rounded-xl">
+                        <Clock size={16} className="text-indigo-400" />
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                          Días
-                        </p>
-                        <p className="text-sm font-bold text-white/60">
-                          {filteredStats.global.daysWorked}
-                        </p>
+                      <div>
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-0.5">Esfuerzo</p>
+                        <p className="text-sm font-black text-white">{formatDuration(filteredStats.global.totalHours)}</p>
                       </div>
                     </div>
-                  )}
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/5 p-2.5 rounded-xl">
+                        <Target size={16} className="text-pink-400" />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-0.5">Retención</p>
+                        <p className="text-sm font-black text-white">{settings.taxPercentage || 0}%</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
