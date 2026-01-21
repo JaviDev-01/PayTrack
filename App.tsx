@@ -151,7 +151,16 @@ const App: React.FC = () => {
         if (update) {
           setNewVersion(update.version);
           setVersionInfo(update);
-          setUpdateStatus("available");
+          
+          // Professional approach: download in background automatically
+          setUpdateStatus("downloading");
+          try {
+            await OTA.downloadUpdate(update);
+            setUpdateStatus("ready");
+          } catch (dlErr) {
+            console.error("Background download failed", dlErr);
+            setUpdateStatus("idle");
+          }
         }
       } catch (err) {
         console.error("OTA update check failed", err);
@@ -174,19 +183,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleStartUpdate = async () => {
-    if (!versionInfo) return;
-    setUpdateStatus("downloading");
-    try {
-      await OTA.downloadUpdate(versionInfo);
-      setUpdateStatus("ready");
-    } catch (e) {
-      console.error("Download failed", e);
-      setUpdateStatus("idle"); // Reset on failure
-      alert("Error en la descarga. Inténtalo más tarde.");
-    }
-  };
-
+  // handleInstallUpdate now handles the installation after background download
   const handleInstallUpdate = async () => {
     setUpdateStatus("restarting");
     try {
@@ -572,14 +569,6 @@ const App: React.FC = () => {
           </div>
 
           <div>
-            {updateStatus === "available" && (
-              <button
-                onClick={handleStartUpdate}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
-              >
-                Descargar
-              </button>
-            )}
             {updateStatus === "ready" && (
               <button
                 onClick={handleInstallUpdate}
