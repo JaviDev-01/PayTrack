@@ -47,6 +47,13 @@ export const formatDateRange = (start: Date, end: Date): string => {
   return `${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}`;
 };
 
+export const toLocalISOString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const getStartOfWeek = (date: Date): Date => {
   const d = new Date(date);
   const day = d.getDay();

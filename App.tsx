@@ -8,6 +8,7 @@ import {
   formatDateRange,
   formatDuration,
   getMonthName,
+  toLocalISOString,
   getBillingCycleRange,
   exportToExcel,
 } from "./utils";
@@ -305,8 +306,8 @@ const App: React.FC = () => {
       end = range.end;
     }
 
-    const startStr = start.toISOString().split("T")[0];
-    const endStr = end.toISOString().split("T")[0];
+    const startStr = toLocalISOString(start);
+    const endStr = toLocalISOString(end);
     const periodEntries = entries.filter(
       (e) => e.date >= startStr && e.date <= endStr,
     );
@@ -338,8 +339,8 @@ const App: React.FC = () => {
       settings.billingCycleStartDay || 1,
       selectedDate,
     );
-    const pStartStr = pStart.toISOString().split("T")[0];
-    const pEndStr = pEnd.toISOString().split("T")[0];
+    const pStartStr = toLocalISOString(pStart);
+    const pEndStr = toLocalISOString(pEnd);
 
     const periodEntries = entries.filter(
       (e) => e.date >= pStartStr && e.date <= pEndStr,
@@ -370,8 +371,8 @@ const App: React.FC = () => {
     );
 
     // B. Weekly Stats (for chart)
-    const wStartStr = currentWeekStart.toISOString().split("T")[0];
-    const wEndStr = currentWeekEnd.toISOString().split("T")[0];
+    const wStartStr = toLocalISOString(currentWeekStart);
+    const wEndStr = toLocalISOString(currentWeekEnd);
 
     const weeklyEntries = entries.filter(
       (e) => e.date >= wStartStr && e.date <= wEndStr,
@@ -659,12 +660,9 @@ const App: React.FC = () => {
                               getBillingCycleRange(
                                 settings.billingCycleStartDay || 1,
                               ).start,
-                              addDays(
-                                getBillingCycleRange(
-                                  settings.billingCycleStartDay || 1,
-                                ).end,
-                                1,
-                              ),
+                              getBillingCycleRange(
+                                settings.billingCycleStartDay || 1,
+                              ).end,
                             )}
                       </p>
                     </div>
@@ -768,7 +766,7 @@ const App: React.FC = () => {
                     <span className="text-[10px] font-bold text-gray-400">
                       {formatDateRange(
                         filteredStats.range.start,
-                        addDays(filteredStats.range.end, 1),
+                        filteredStats.range.end,
                       )}
                     </span>
                   </div>
