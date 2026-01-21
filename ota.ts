@@ -36,7 +36,9 @@ export const OTA = {
       // 2. Fetch remote version
       // Cache busting with timestamp
       const res = await fetch(`${REPO_URL}?t=${Date.now()}`);
-      if (!res.ok) return null;
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} fetching remote config`);
+      }
 
       const remoteConfig = await res.json();
       const remoteVersion = remoteConfig.version;
@@ -72,17 +74,28 @@ export const OTA = {
     }
 
     try {
+      // 4. Log versions for debugging
+      const all = await CapacitorUpdater.list();
+      console.log("[OTA] Versiones instaladas:", all);
+
       console.log(`[OTA] Instalando versión: ${versionInfo.version}`);
       
       // Creating a race promise: if plugin takes too long, we force reload
       const installPromise = async () => {
+        // 2. Safer: Ensure download exists before setting
+        await CapacitorUpdater.download({
+          version: versionInfo.version,
+          url: versionInfo.downloadUrl,
+        });
+
         await CapacitorUpdater.set({ id: versionInfo.version });
         console.log(`[OTA] Versión establecida. Reiniciando app...`);
         await CapacitorUpdater.reload();
       };
 
       const timeoutPromise = new Promise((_, reject) => {
-         setTimeout(() => reject(new Error("Timeout waiting for updates")), 3000);
+         // 1. Increased timeout to 8000ms as requested
+         setTimeout(() => reject(new Error("Timeout waiting for updates")), 8000);
       });
 
       await Promise.race([installPromise(), timeoutPromise]);
@@ -90,8 +103,6 @@ export const OTA = {
     } catch (error) {
       console.error("[OTA] Fallo en la instalación o Timeout:", error);
       // Fallback a recarga de ventana si falla el plugin o tarda demasiado
-      // Esto "desatasca" la app, y si el update se aplicó en segundo plano, cargará el nuevo.
-      // Si no, recarga el actual.
       window.location.reload();
     }
   },
