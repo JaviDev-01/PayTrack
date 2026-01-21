@@ -460,7 +460,7 @@ const App: React.FC = () => {
             className="text-center mb-16 space-y-4"
           >
             <div className="inline-block bg-gray-900 text-white px-4 py-1.5 rounded-full mb-4 transform rotate-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">PayTrack Pro v1.6.16</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em]">PayTrack Pro v{appVersion}</span>
             </div>
             <h1 className="text-6xl font-black text-gray-900 tracking-tighter leading-[0.9]">
               Bienvenido, <br />
@@ -624,7 +624,7 @@ const App: React.FC = () => {
             </motion.div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-0.5">
-                AGENT: {userName.toUpperCase()}
+                AGENT: {userName.toUpperCase()} • v{appVersion}
               </p>
               <h1 className="text-xl font-black text-gray-900 tracking-tighter leading-none">
                 Estado Actual
