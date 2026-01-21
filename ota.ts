@@ -66,20 +66,32 @@ export const OTA = {
   },
 
   async installUpdate(versionInfo: VersionInfo) {
+    if (!versionInfo?.version) {
+      console.error("[OTA] No version info provided to installUpdate");
+      return;
+    }
+
     try {
       console.log(`[OTA] Instalando versión: ${versionInfo.version}`);
       
-      // 1. Set the new version
-      await CapacitorUpdater.set({ id: versionInfo.version });
-      
-      console.log(`[OTA] Versión establecida. Reiniciando app...`);
+      // Creating a race promise: if plugin takes too long, we force reload
+      const installPromise = async () => {
+        await CapacitorUpdater.set({ id: versionInfo.version });
+        console.log(`[OTA] Versión establecida. Reiniciando app...`);
+        await CapacitorUpdater.reload();
+      };
 
-      // 2. Reload the app immediately to apply changes
-      await CapacitorUpdater.reload();
+      const timeoutPromise = new Promise((_, reject) => {
+         setTimeout(() => reject(new Error("Timeout waiting for updates")), 3000);
+      });
+
+      await Promise.race([installPromise(), timeoutPromise]);
       
     } catch (error) {
-      console.error("[OTA] Fallo en la instalación:", error);
-      // Fallback a recarga de ventana si falla el plugin
+      console.error("[OTA] Fallo en la instalación o Timeout:", error);
+      // Fallback a recarga de ventana si falla el plugin o tarda demasiado
+      // Esto "desatasca" la app, y si el update se aplicó en segundo plano, cargará el nuevo.
+      // Si no, recarga el actual.
       window.location.reload();
     }
   },
